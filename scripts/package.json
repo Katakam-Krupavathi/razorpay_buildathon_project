@@ -17,6 +17,7 @@
     "pipeline:batch": "tsx src/run-pipeline-batch.ts",
     "cb:simulate": "tsx src/simulate-circuit-breaker.ts",
     "demo:stale-cache": "tsx src/demo-stale-cache.ts",
+    "audit:compliance": "tsx src/run-compliance-audit.ts",
     "razorpay:seed-test-data": "tsx src/create-test-data.ts",
     "test": "vitest run"
   },
