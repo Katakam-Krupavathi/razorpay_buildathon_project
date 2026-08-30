@@ -420,8 +420,23 @@ export interface RecoveryPlan {
 }
 
 // ============================================================================
-// Policy Engine (Permit / Deny / Throttle)
+// Policy Engine (Permit / Deny / Throttle Gate)
 // ============================================================================
+
+export type PolicyDecisionResultType = 'ALLOW' | 'MODIFY' | 'BLOCK' | 'NO_ACTION';
+
+export interface PolicyDecisionRecord {
+  decisionId: string;
+  instrumentId: string;
+  subscriptionId: string | null;
+  result: PolicyDecisionResultType;
+  proposedAction: PlannerActionType;
+  finalAction: PlannerActionType;
+  ruleIdMatched: string;
+  reason: string;
+  evaluatedAt: string;
+  parameters?: Record<string, unknown>;
+}
 
 export type PolicyDecisionType = 'PERMIT' | 'DENY' | 'THROTTLE';
 

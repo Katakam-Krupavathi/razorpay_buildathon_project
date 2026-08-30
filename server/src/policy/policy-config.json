@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-08-30T00:00:00.000Z",
+  "complianceNote": "For the final submission, re-verify every numerical compliance rule against current Razorpay/NPCI documentation. This engine enforces the configured rail/network constraints — it does not itself certify legal compliance.",
+  "rails": {
+    "card": {
+      "maxAttempts": 4,
+      "nextAttemptOffsetDays": 1,
+      "ruleIdMaxAttempts": "CARD-MAX-ATTEMPTS-001",
+      "ruleIdOffset": "CARD-RETRY-OFFSET-001",
+      "description": "Card tokenized auto-debit max 4 attempts with minimum 1-day spacing"
+    },
+    "upi_autopay": {
+      "maxAttempts": 4,
+      "maxRetries": 3,
+      "retryWindowsHours": [24, 72, 168],
+      "standardAfaThresholdPaise": 1500000,
+      "categoryAfaThresholdPaise": 10000000,
+      "categoryMccList": ["6211", "6300", "8220", "6012"],
+      "ruleIdMaxAttempts": "UPI-NPCI-RETRY-CAP-001",
+      "ruleIdAfaThreshold": "UPI-AFA-THRESHOLD-001",
+      "description": "UPI AutoPay NPCI max 1 original + 3 retries, ₹15,000 standard / ₹1,00,000 category AFA limit"
+    },
+    "enach": {
+      "defaultMaxAttempts": 3,
+      "bankOverrides": {
+        "HDFC": 3,
+        "ICICI": 3,
+        "SBIN": 2,
+        "UTIB": 3,
+        "KKBK": 3
+      },
+      "ruleIdMaxAttempts": "ENACH-BANK-RETRY-CAP-001",
+      "description": "E-NACH clearing standing instructions per-bank retry limits"
+    }
+  },
+  "global": {
+    "maxNudgesPerCycle": 1,
+    "staleStatePolicy": "BLOCK",
+    "circuitBreaker": "ENABLED",
+    "defaultTerminalAction": "grace_period",
+    "defaultTerminalGraceDays": 3,
+    "ruleIdNudgeCap": "GLOBAL-NUDGE-CAP-001",
+    "ruleIdTerminalGrace": "TERMINAL-GRACE-PAUSE-001",
+    "ruleIdCustomerOptOut": "CUSTOMER-OPT-OUT-001",
+    "ruleIdPassThroughNoAction": "PASS-THROUGH-NO-ACTION-001",
+    "ruleIdPassThroughAllow": "PASS-THROUGH-PERMIT-001"
+  }
+}
