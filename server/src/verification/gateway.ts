@@ -54,6 +54,13 @@ export class VerificationGateway {
   }
 
   /**
+   * Returns the underlying Razorpay live client.
+   */
+  getRazorpayClient(): RazorpayClient {
+    return this.razorpayClient;
+  }
+
+  /**
    * Performs all 4 pre-action verification checks.
    */
   async verify(
