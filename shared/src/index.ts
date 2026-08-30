@@ -273,6 +273,44 @@ export interface RecoveryEvent<T = Record<string, unknown>> {
 // Risk Intelligence & Failure Cause Taxonomy
 // ============================================================================
 
+export type TrajectoryType = 'HEALTHY' | 'DEGRADING' | 'TERMINAL';
+
+export type RootCauseType =
+  | 'CARD_EXPIRY_RISK'
+  | 'REPEATED_SOFT_DECLINE'
+  | 'HARD_DECLINE_PATTERN'
+  | 'AFA_PENDING'
+  | 'ISSUER_HISTORICAL_RISK'
+  | 'MANDATE_INACTIVE'
+  | 'UNKNOWN'
+  | 'NONE';
+
+export interface RiskFeatureVector {
+  failure_count_last_3_cycles: number;
+  success_count_total: number;
+  consecutive_failures: number;
+  days_to_expiry: number | null;
+  days_to_expiry_normalized: number | null;
+  is_near_card_expiry: boolean;
+  decline_code_distribution: Record<string, number>;
+  is_over_afa_threshold: boolean;
+  mandate_status: string;
+  last_event_type: string;
+  issuer_prior: number;
+}
+
+export interface HealthEvaluationResult {
+  snapshotId?: string;
+  instrumentId: string;
+  subscriptionId: string | null;
+  healthScore: number; // 0.0000 - 1.0000
+  trajectory: TrajectoryType;
+  rootCause: RootCauseType;
+  recoveryProbability: number; // 0.0000 - 1.0000
+  featureVector: RiskFeatureVector;
+  computedAt: string;
+}
+
 export type FailureCategory =
   | 'insufficient_funds'
   | 'temporary_bank_downtime'
@@ -298,6 +336,27 @@ export interface RiskIntelligenceScore {
 // ============================================================================
 // Expected Recovery Value (ERV) & Churn Scoring
 // ============================================================================
+
+export type RecoveryActionType =
+  | 'smart_retry_optimal_window'
+  | 'pre_expiry_card_update_link'
+  | 'mandate_limit_upgrade_link'
+  | 'vpa_collect_request'
+  | 'dunning_step_up_auth'
+  | 'direct_debit_resubmission'
+  | 'manual_escalation';
+
+export interface ERVCalculationResult {
+  instrumentId: string;
+  subscriptionId: string | null;
+  amountAtRisk: number; // in paise
+  recoveryProbability: number;
+  recommendedAction: RecoveryActionType;
+  expectedActionSuccessRate: number;
+  expectedRecoveryValue: number; // in paise: amountAtRisk * recoveryProbability * expectedActionSuccessRate
+  expectedRecoveryValueRupees: number; // in rupees
+  computedAt: string;
+}
 
 export interface ERVComputation {
   invoiceId: string;
