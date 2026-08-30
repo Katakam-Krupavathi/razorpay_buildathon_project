@@ -1,0 +1,22 @@
+{
+  "name": "@recovery/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/health-check.js",
+  "scripts": {
+    "build": "tsc",
+    "health-check": "tsx src/health-check.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@recovery/shared": "*",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.5"
+  }
+}

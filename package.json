@@ -1,0 +1,32 @@
+{
+  "name": "autonomous-revenue-recovery-control-plane",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "web",
+    "scripts"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspaces --if-present",
+    "dev": "concurrently -n \"server,web\" -c \"blue,green\" \"npm run dev -w @recovery/server\" \"npm run dev -w @recovery/web\"",
+    "clean": "rimraf dist build **/dist **/build **/node_modules"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@types/node": "^20.14.10",
+    "concurrently": "^8.2.2",
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.3",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.5"
+  }
+}

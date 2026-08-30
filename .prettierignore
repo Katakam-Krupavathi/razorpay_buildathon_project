@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.docker-data/
+postgres-data/
+redis-data/
