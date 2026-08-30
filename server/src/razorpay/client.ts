@@ -151,6 +151,37 @@ export class RazorpayClient {
     });
   }
 
+  private static simulatedOverrides: Map<
+    string,
+    { mandateStatus?: string; subscriptionStatus?: string }
+  > = new Map();
+
+  /**
+   * Test Hook: Simulates live mandate status divergence (e.g. silent bank revocation) for demo.
+   */
+  static setSimulatedLiveOverride(
+    id: string,
+    override: { mandateStatus?: string; subscriptionStatus?: string },
+  ): void {
+    RazorpayClient.simulatedOverrides.set(id, override);
+  }
+
+  /**
+   * Clears all simulated live overrides.
+   */
+  static clearSimulatedLiveOverrides(): void {
+    RazorpayClient.simulatedOverrides.clear();
+  }
+
+  /**
+   * Retrieves simulated live override for an ID if set.
+   */
+  static getSimulatedLiveOverride(
+    id: string,
+  ): { mandateStatus?: string; subscriptionStatus?: string } | undefined {
+    return RazorpayClient.simulatedOverrides.get(id);
+  }
+
   /**
    * Fetches the live subscription state directly from Razorpay.
    */
@@ -158,6 +189,28 @@ export class RazorpayClient {
     if (!subscriptionId) {
       throw new Error('Subscription ID is required to fetch live subscription state');
     }
+
+    // Check test hook simulation
+    const override = RazorpayClient.getSimulatedLiveOverride(subscriptionId);
+    if (override?.subscriptionStatus) {
+      return {
+        id: subscriptionId,
+        plan_id: 'plan_simulated',
+        customer_id: 'cust_simulated',
+        status: override.subscriptionStatus,
+        current_start: Math.floor(Date.now() / 1000),
+        current_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+        ended_at: null,
+        quantity: 1,
+        charge_at: Math.floor(Date.now() / 1000),
+        start_at: Math.floor(Date.now() / 1000),
+        end_at: Math.floor(Date.now() / 1000) + 365 * 86400,
+        total_count: 12,
+        paid_count: 1,
+        created_at: Math.floor(Date.now() / 1000),
+      };
+    }
+
     return this.request<RazorpaySubscriptionEntity>(`/subscriptions/${subscriptionId}`, {
       method: 'GET',
     });
@@ -172,6 +225,21 @@ export class RazorpayClient {
   ): Promise<RazorpayTokenEntity | RazorpayMandate> {
     if (!tokenId) {
       throw new Error('Token / Instrument ID is required to fetch live mandate state');
+    }
+
+    // Check test hook simulation
+    const override = RazorpayClient.getSimulatedLiveOverride(tokenId);
+    if (override?.mandateStatus) {
+      return {
+        id: tokenId,
+        entity: 'token',
+        token: `tok_sim_${tokenId}`,
+        method: 'card',
+        recurring: true,
+        auth_type: 'pin',
+        created_at: Math.floor(Date.now() / 1000),
+        status: override.mandateStatus,
+      } as unknown as RazorpayTokenEntity;
     }
 
     const endpoint = customerId

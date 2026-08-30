@@ -503,6 +503,54 @@ export interface CircuitBreakerMetrics {
 }
 
 // ============================================================================
+// Safety / Verification Gateway (Pre-Action Checks)
+// ============================================================================
+
+export type VerificationCheckName =
+  | 'LIVE_STATE_CHECK'
+  | 'IDEMPOTENCY_CHECK'
+  | 'CIRCUIT_BREAKER_CHECK'
+  | 'POLICY_FRESHNESS_CHECK';
+
+export type VerificationStatus = 'VERIFIED_SAFE' | 'BLOCKED';
+
+export type VerificationBlockReason =
+  | 'STALE_STATE_DISAGREEMENT'
+  | 'IDEMPOTENCY_CONFLICT'
+  | 'CIRCUIT_BREAKER_OPEN'
+  | 'POLICY_DECISION_STALE'
+  | 'INTERNAL_VERIFICATION_ERROR';
+
+export interface VerificationCheckResult {
+  check: VerificationCheckName;
+  passed: boolean;
+  reason?: string;
+  details?: Record<string, unknown>;
+}
+
+export interface PreActionVerificationRecord {
+  verificationId: string;
+  decisionId: string;
+  instrumentId: string;
+  subscriptionId: string | null;
+  status: VerificationStatus;
+  blockedReason?: VerificationBlockReason;
+  checks: VerificationCheckResult[];
+  cachedMandateStatus: string;
+  liveMandateStatus: string;
+  verifiedAt: string;
+}
+
+export interface StaleStateDetectedPayload {
+  instrumentId: string;
+  subscriptionId: string | null;
+  cachedStatus: string;
+  liveStatus: string;
+  divergenceDetectedAt: string;
+  reason: string;
+}
+
+// ============================================================================
 // Net Value Recovered (NVR) & Attribution
 // ============================================================================
 
