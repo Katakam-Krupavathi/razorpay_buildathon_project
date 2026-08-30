@@ -174,6 +174,19 @@ docker compose config
 
 ---
 
+## ⚠️ Known Limitations
+
+1. **Authentication & Access Control (Hackathon Scope)**:
+   - User authentication and role-based access control (RBAC) are out of scope for this hackathon-scale prototype and demo artifact.
+   - For enterprise production deployments, standard OpenID Connect (OIDC) / SAML 2.0 and fine-grained API Gateway token validation should be placed in front of the Fastify server and React dashboard.
+2. **Razorpay Live vs Test Sandbox**:
+   - The engine integrates with Razorpay Test Mode with webhook signature validation and simulated live mandate status overrides for signature 2 AM safety demonstrations.
+3. **Notification Channels**:
+   - Customer dunning notifications (WhatsApp/SMS/Email) currently log through a structured channel abstraction; in production, SMS/WhatsApp gateways (e.g. Gupshup/Twilio) connect directly to this abstraction.
+
+---
+
 ## 📜 License
 
 MIT © 2026 Autonomous Revenue Recovery Control Plane Team
+
