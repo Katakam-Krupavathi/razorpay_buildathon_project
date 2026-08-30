@@ -24,6 +24,16 @@ export * from './planner/planner-service.js';
 export * from './policy/types.js';
 export * from './policy/engine.js';
 export * from './policy/policy-service.js';
+export * from './circuit-breaker/types.js';
+export * from './circuit-breaker/circuit-breaker.js';
+export * from './circuit-breaker/circuit-breaker-guard.js';
+export * from './routes/circuit-breaker.js';
+
+import {
+  circuitBreakerRoutes,
+  CircuitBreakerRouteOptions,
+} from './routes/circuit-breaker.js';
+import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
 
 dotenv.config();
 
@@ -32,6 +42,7 @@ const host = process.env.HOST || '0.0.0.0';
 
 export interface AppOptions extends FastifyServerOptions {
   webhookOptions?: WebhookRouteOptions;
+  circuitBreakerOptions?: CircuitBreakerRouteOptions;
 }
 
 export async function buildApp(opts?: AppOptions) {
@@ -45,8 +56,15 @@ export async function buildApp(opts?: AppOptions) {
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: true });
 
+  // Initialize shared Circuit Breaker
+  const circuitBreaker =
+    opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
+
   // Register Webhook Ingestion Routes
   await app.register(webhookRoutes, opts?.webhookOptions || {});
+
+  // Register Circuit Breaker Routes
+  await app.register(circuitBreakerRoutes, { circuitBreaker });
 
   // Root & Health Check Endpoints
   app.get('/', async () => {
