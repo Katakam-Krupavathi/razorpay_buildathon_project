@@ -1,8 +1,5 @@
 import pg from 'pg';
-import type {
-  ProposedActionRecord,
-  StoredEvent,
-} from '@recovery/shared';
+import type { ProposedActionRecord, StoredEvent } from '@recovery/shared';
 import { EventStore } from '../event-store/event-store.js';
 import { getPool } from '../db/connection.js';
 import { HealthService } from '../risk/health-service.js';
@@ -35,10 +32,7 @@ export class RecoveryPlannerService {
   /**
    * Evaluates an instrument, formulates a recovery proposal, and logs it to EventStore.
    */
-  async planAndLog(
-    instrumentId: string,
-    options?: PlannerOptions,
-  ): Promise<PlannerServiceResult> {
+  async planAndLog(instrumentId: string, options?: PlannerOptions): Promise<PlannerServiceResult> {
     const instrument = await this.healthService.getInstrument(instrumentId);
     if (!instrument) {
       throw new Error(`Instrument not found: ${instrumentId}`);

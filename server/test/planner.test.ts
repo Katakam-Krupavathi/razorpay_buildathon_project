@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import type {
-  DbInstrument,
-  HealthEvaluationResult,
-  ERVCalculationResult,
-} from '@recovery/shared';
+import type { DbInstrument, HealthEvaluationResult, ERVCalculationResult } from '@recovery/shared';
 import { formulateRecoveryPlan } from '../src/planner/planner.js';
 import { RecoveryPlannerService } from '../src/planner/planner-service.js';
 import { EventStore } from '../src/event-store/event-store.js';
@@ -89,7 +85,7 @@ describe('AI Recovery Planner Unit Tests', () => {
           healthScore: 0.15,
           trajectory: 'TERMINAL',
           rootCause: 'MANDATE_INACTIVE',
-          recoveryProbability: 0.10,
+          recoveryProbability: 0.1,
         },
         erv: {
           amountAtRisk: 49900,
@@ -175,7 +171,7 @@ describe('AI Recovery Planner Unit Tests', () => {
           healthScore: 0.45,
           trajectory: 'DEGRADING',
           rootCause: 'REPEATED_SOFT_DECLINE',
-          recoveryProbability: 0.40,
+          recoveryProbability: 0.4,
           featureVector: {
             failure_count_last_3_cycles: 2,
             success_count_total: 5,
@@ -206,7 +202,7 @@ describe('AI Recovery Planner Unit Tests', () => {
           healthScore: 0.0,
           trajectory: 'TERMINAL',
           rootCause: 'HARD_DECLINE_PATTERN',
-          recoveryProbability: 0.20,
+          recoveryProbability: 0.2,
           featureVector: {
             failure_count_last_3_cycles: 1,
             success_count_total: 2,
@@ -235,10 +231,10 @@ describe('AI Recovery Planner Unit Tests', () => {
         ltvTier: 'high',
         instrument: { rail: 'upi_autopay' },
         health: {
-          healthScore: 0.70,
+          healthScore: 0.7,
           trajectory: 'HEALTHY',
           rootCause: 'AFA_PENDING',
-          recoveryProbability: 0.70,
+          recoveryProbability: 0.7,
           featureVector: {
             failure_count_last_3_cycles: 1,
             success_count_total: 3,

@@ -20,6 +20,7 @@
     "db:seed": "npm run db:seed -w @recovery/scripts",
     "seed:synthetic": "npm run seed:synthetic -w @recovery/scripts",
     "risk:analyze": "npm run risk:analyze -w @recovery/scripts",
+    "planner:batch": "npm run planner:batch -w @recovery/scripts",
     "razorpay:seed-test-data": "npm run razorpay:seed-test-data -w @recovery/scripts",
     "dev": "concurrently -n \"server,web\" -c \"blue,green\" \"npm run dev -w @recovery/server\" \"npm run dev -w @recovery/web\"",
     "clean": "rimraf dist build **/dist **/build **/node_modules"

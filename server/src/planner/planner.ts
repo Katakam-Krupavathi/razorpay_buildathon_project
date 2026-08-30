@@ -1,8 +1,5 @@
 import crypto from 'node:crypto';
-import type {
-  ProposedActionRecord,
-  PlannerActionType,
-} from '@recovery/shared';
+import type { ProposedActionRecord, PlannerActionType } from '@recovery/shared';
 import type { PlannerContext, PlannerOptions } from './types.js';
 
 /**
@@ -39,11 +36,7 @@ export function formulateRecoveryPlan(
   };
 
   // 1. HEALTHY Cohort with No Active Risk -> NO_ACTION
-  if (
-    health.trajectory === 'HEALTHY' &&
-    health.rootCause === 'NONE' &&
-    !fv.is_near_card_expiry
-  ) {
+  if (health.trajectory === 'HEALTHY' && health.rootCause === 'NONE' && !fv.is_near_card_expiry) {
     proposedAction = 'NO_ACTION';
     reasoning = `Instrument is in HEALTHY operational status with 0 recent failures and valid mandate. No recovery intervention required.`;
     confidence = 0.99;
@@ -75,7 +68,7 @@ export function formulateRecoveryPlan(
       if (ltvTier === 'critical' || ltvTier === 'high') {
         proposedAction = 'escalate';
         reasoning = `Card expired for high-value customer (₹${monthlyAmountRupees.toLocaleString('en-IN')}/mo). Immediate account manager escalation recommended for card update.`;
-        confidence = 0.90;
+        confidence = 0.9;
         parameters.escalationTier = 'vip_account_manager';
       } else {
         proposedAction = 'pause';
@@ -95,7 +88,7 @@ export function formulateRecoveryPlan(
     } else {
       proposedAction = 'schedule_retry';
       reasoning = `UPI AutoPay AFA threshold exceeded. Scheduling retry with customer push notification to authorize debit in UPI app.`;
-      confidence = 0.80;
+      confidence = 0.8;
       parameters.retryBackoffHours = 12;
       parameters.scheduledAt = new Date(refTime.getTime() + 12 * 3600 * 1000).toISOString();
     }
@@ -128,7 +121,7 @@ export function formulateRecoveryPlan(
       if (ltvTier === 'critical' || ltvTier === 'high') {
         proposedAction = 'escalate';
         reasoning = `${consecutive} consecutive soft failures for ${ltvTier} tier. Automated retry threshold exhausted. Escalating to customer success.`;
-        confidence = 0.90;
+        confidence = 0.9;
         parameters.escalationReason = 'persistent_soft_declines';
       } else {
         proposedAction = 'pause';
@@ -159,7 +152,7 @@ export function formulateRecoveryPlan(
     if (ltvTier === 'critical') {
       proposedAction = 'escalate';
       reasoning = `Mandate status is inactive (${instrument.mandate_status}) on CRITICAL tier. High-touch manual outreach required to re-authenticate mandate.`;
-      confidence = 0.90;
+      confidence = 0.9;
     } else {
       proposedAction = 'NO_ACTION';
       reasoning = `Mandate is ${instrument.mandate_status} on ${ltvTier} tier. Automated charge impossible without customer re-authentication.`;
@@ -170,7 +163,7 @@ export function formulateRecoveryPlan(
   else {
     proposedAction = 'schedule_retry';
     reasoning = `Unclassified degradation (Health score: ${health.healthScore.toFixed(2)}). Scheduling standard retry attempt.`;
-    confidence = 0.60;
+    confidence = 0.6;
   }
 
   const proposalId = `prop_${crypto.randomUUID()}`;

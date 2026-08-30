@@ -398,11 +398,7 @@ export interface ProposedActionRecord {
 }
 
 export type ExecutionRail =
-  | 'upi_autopay'
-  | 'card_charge'
-  | 'dunning_link'
-  | 'whatsapp_pay'
-  | 'manual_escalation';
+  'upi_autopay' | 'card_charge' | 'dunning_link' | 'whatsapp_pay' | 'manual_escalation';
 
 export interface RecoveryStep {
   stepNumber: number;
