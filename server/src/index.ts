@@ -21,6 +21,9 @@ export * from './risk/batch-runner.js';
 export * from './planner/types.js';
 export * from './planner/planner.js';
 export * from './planner/planner-service.js';
+export * from './policy/types.js';
+export * from './policy/engine.js';
+export * from './policy/policy-service.js';
 
 dotenv.config();
 
