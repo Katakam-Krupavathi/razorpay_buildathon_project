@@ -637,7 +637,7 @@ export interface PipelineProcessResult {
   instrumentId: string;
   subscriptionId: string | null;
   risk: HealthEvaluationResult;
-  erv: ERVComputation;
+  erv: ERVCalculationResult;
   plan: ProposedActionRecord;
   policy: PolicyDecisionRecord;
   verification: PreActionVerificationRecord;

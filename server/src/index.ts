@@ -32,10 +32,21 @@ export * from './verification/types.js';
 export * from './verification/gateway.js';
 export * from './verification/verification-service.js';
 export * from './routes/dev-hooks.js';
+export * from './execution/types.js';
+export * from './execution/notification-provider.js';
+export * from './execution/execution-engine.js';
+export * from './escalation/escalation-service.js';
+export * from './orchestrator/pipeline-orchestrator.js';
+export * from './routes/escalation.js';
+export * from './routes/pipeline.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { devHookRoutes } from './routes/dev-hooks.js';
+import { escalationRoutes, EscalationRouteOptions } from './routes/escalation.js';
+import { pipelineRoutes, PipelineRouteOptions } from './routes/pipeline.js';
 import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
+import { EscalationService } from './escalation/escalation-service.js';
+import { RecoveryPipelineOrchestrator } from './orchestrator/pipeline-orchestrator.js';
 
 dotenv.config();
 
@@ -45,6 +56,8 @@ const host = process.env.HOST || '0.0.0.0';
 export interface AppOptions extends FastifyServerOptions {
   webhookOptions?: WebhookRouteOptions;
   circuitBreakerOptions?: CircuitBreakerRouteOptions;
+  escalationOptions?: EscalationRouteOptions;
+  pipelineOptions?: PipelineRouteOptions;
 }
 
 export async function buildApp(opts?: AppOptions) {
@@ -58,8 +71,10 @@ export async function buildApp(opts?: AppOptions) {
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: true });
 
-  // Initialize shared Circuit Breaker
+  // Initialize shared Circuit Breaker & Orchestrator Services
   const circuitBreaker = opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
+  const escalationService = opts?.escalationOptions?.escalationService || new EscalationService();
+  const orchestrator = opts?.pipelineOptions?.orchestrator || new RecoveryPipelineOrchestrator();
 
   // Register Webhook Ingestion Routes
   await app.register(webhookRoutes, opts?.webhookOptions || {});
@@ -69,6 +84,12 @@ export async function buildApp(opts?: AppOptions) {
 
   // Register Dev Simulation Hooks Routes
   await app.register(devHookRoutes);
+
+  // Register Escalation Review Routes
+  await app.register(escalationRoutes, { escalationService });
+
+  // Register Pipeline Orchestration Routes
+  await app.register(pipelineRoutes, { orchestrator });
 
   // Root & Health Check Endpoints
   app.get('/', async () => {
