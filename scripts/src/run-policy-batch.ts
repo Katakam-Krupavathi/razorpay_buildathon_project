@@ -44,9 +44,7 @@ export async function runPolicyBatchCli(): Promise<PolicyBatchResult> {
 
   for (const instrument of instruments) {
     // 1. Health evaluation
-    const healthResult = await healthService.evaluateAndPersist(
-      instrument.instrument_id,
-    );
+    const healthResult = await healthService.evaluateAndPersist(instrument.instrument_id);
 
     // 2. Proposal from Planner
     const planResult = await plannerService.planAndLog(instrument.instrument_id);
@@ -70,8 +68,7 @@ export async function runPolicyBatchCli(): Promise<PolicyBatchResult> {
 
     const dec = policyResult.decision;
     countsByResult[dec.result]++;
-    countsByRuleId[dec.ruleIdMatched] =
-      (countsByRuleId[dec.ruleIdMatched] || 0) + 1;
+    countsByRuleId[dec.ruleIdMatched] = (countsByRuleId[dec.ruleIdMatched] || 0) + 1;
     decisions.push(dec);
   }
 
@@ -81,30 +78,20 @@ export async function runPolicyBatchCli(): Promise<PolicyBatchResult> {
 
   console.log('\n--- Decision Distribution ---');
   for (const [resultType, count] of Object.entries(countsByResult)) {
-    const pct =
-      instruments.length > 0
-        ? ((count / instruments.length) * 100).toFixed(1)
-        : '0';
-    console.log(
-      `  - ${resultType.padEnd(12)}: ${String(count).padStart(3)} (${pct}%)`,
-    );
+    const pct = instruments.length > 0 ? ((count / instruments.length) * 100).toFixed(1) : '0';
+    console.log(`  - ${resultType.padEnd(12)}: ${String(count).padStart(3)} (${pct}%)`);
   }
 
   console.log('\n--- Matched Rule ID Distribution ---');
   for (const [ruleId, count] of Object.entries(countsByRuleId)) {
-    const pct =
-      instruments.length > 0
-        ? ((count / instruments.length) * 100).toFixed(1)
-        : '0';
+    const pct = instruments.length > 0 ? ((count / instruments.length) * 100).toFixed(1) : '0';
     console.log(`  - ${ruleId.padEnd(28)}: ${String(count).padStart(3)} (${pct}%)`);
   }
 
   console.log('\n================ SAMPLE POLICY DECISIONS ================');
   const sampleSelection = decisions.slice(0, 8);
   for (const d of sampleSelection) {
-    console.log(
-      `\n[${d.result}] Rule: ${d.ruleIdMatched} | Instrument: ${d.instrumentId}`,
-    );
+    console.log(`\n[${d.result}] Rule: ${d.ruleIdMatched} | Instrument: ${d.instrumentId}`);
     console.log(`  Proposed: ${d.proposedAction.padEnd(16)} -> Final: ${d.finalAction}`);
     console.log(`  Reason  : "${d.reason}"`);
   }

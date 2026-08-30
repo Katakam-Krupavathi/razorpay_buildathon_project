@@ -38,7 +38,11 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
     });
 
     it('2. should modify retry to grace_period on card when attemptCount is at exact cap (4/4)', () => {
-      const ctx = createMockPolicyContext({ rail: 'card', attemptCount: 4, proposedAction: 'schedule_retry' });
+      const ctx = createMockPolicyContext({
+        rail: 'card',
+        attemptCount: 4,
+        proposedAction: 'schedule_retry',
+      });
       const res = decide(ctx);
 
       expect(res.result).toBe('MODIFY');
@@ -48,7 +52,11 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
     });
 
     it('3. should modify retry to grace_period on card when attemptCount exceeds cap (5/4)', () => {
-      const ctx = createMockPolicyContext({ rail: 'card', attemptCount: 5, proposedAction: 'retry' });
+      const ctx = createMockPolicyContext({
+        rail: 'card',
+        attemptCount: 5,
+        proposedAction: 'retry',
+      });
       const res = decide(ctx);
 
       expect(res.result).toBe('MODIFY');
@@ -57,7 +65,11 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
     });
 
     it('4. should modify retry to grace_period on UPI AutoPay when attemptCount is at exact NPCI cap (4/4)', () => {
-      const ctx = createMockPolicyContext({ rail: 'upi_autopay', attemptCount: 4, proposedAction: 'schedule_retry' });
+      const ctx = createMockPolicyContext({
+        rail: 'upi_autopay',
+        attemptCount: 4,
+        proposedAction: 'schedule_retry',
+      });
       const res = decide(ctx);
 
       expect(res.result).toBe('MODIFY');
@@ -67,7 +79,11 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
     });
 
     it('5. should allow schedule_retry on UPI AutoPay when attemptCount is below NPCI cap (2/4)', () => {
-      const ctx = createMockPolicyContext({ rail: 'upi_autopay', attemptCount: 2, proposedAction: 'schedule_retry' });
+      const ctx = createMockPolicyContext({
+        rail: 'upi_autopay',
+        attemptCount: 2,
+        proposedAction: 'schedule_retry',
+      });
       const res = decide(ctx);
 
       expect(res.result).toBe('ALLOW');
@@ -76,7 +92,12 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
     });
 
     it('6. should modify retry to grace_period on E-NACH default bank when attemptCount is at cap (3/3)', () => {
-      const ctx = createMockPolicyContext({ rail: 'enach', bankCode: 'HDFC', attemptCount: 3, proposedAction: 'schedule_retry' });
+      const ctx = createMockPolicyContext({
+        rail: 'enach',
+        bankCode: 'HDFC',
+        attemptCount: 3,
+        proposedAction: 'schedule_retry',
+      });
       const res = decide(ctx);
 
       expect(res.result).toBe('MODIFY');
@@ -85,7 +106,12 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
     });
 
     it('7. should enforce bank-specific lower cap for SBI (SBIN cap = 2) on E-NACH at attemptCount 2', () => {
-      const ctx = createMockPolicyContext({ rail: 'enach', bankCode: 'SBIN', attemptCount: 2, proposedAction: 'schedule_retry' });
+      const ctx = createMockPolicyContext({
+        rail: 'enach',
+        bankCode: 'SBIN',
+        attemptCount: 2,
+        proposedAction: 'schedule_retry',
+      });
       const res = decide(ctx);
 
       expect(res.result).toBe('MODIFY');
@@ -118,7 +144,9 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
       expect(res.result).toBe('MODIFY');
       expect(res.finalAction).toBe('schedule_retry');
       expect(res.ruleIdMatched).toBe('GLOBAL-NUDGE-CAP-001');
-      expect(res.reason).toContain('Customer contact limit reached (1/1 nudges this billing cycle)');
+      expect(res.reason).toContain(
+        'Customer contact limit reached (1/1 nudges this billing cycle)',
+      );
     });
   });
 
@@ -218,11 +246,17 @@ describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
     });
 
     it('17. should handle trajectory flipping mid-cycle from HEALTHY to TERMINAL', () => {
-      const healthyCtx = createMockPolicyContext({ trajectory: 'HEALTHY', proposedAction: 'NO_ACTION' });
+      const healthyCtx = createMockPolicyContext({
+        trajectory: 'HEALTHY',
+        proposedAction: 'NO_ACTION',
+      });
       const healthyRes = decide(healthyCtx);
       expect(healthyRes.result).toBe('NO_ACTION');
 
-      const terminalCtx = createMockPolicyContext({ trajectory: 'TERMINAL', proposedAction: 'escalate' });
+      const terminalCtx = createMockPolicyContext({
+        trajectory: 'TERMINAL',
+        proposedAction: 'escalate',
+      });
       const terminalRes = decide(terminalCtx);
       expect(terminalRes.result).toBe('ALLOW');
       expect(terminalRes.finalAction).toBe('escalate');

@@ -1,10 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type {
-  PolicyContext,
-  PolicyDecisionResult,
-  PolicyRulesConfig,
-} from './types.js';
+import type { PolicyContext, PolicyDecisionResult, PolicyRulesConfig } from './types.js';
 
 /**
  * Compliance Verification Note:
@@ -15,10 +11,7 @@ import type {
 // Load literal versioned JSON configuration
 function loadDefaultConfig(): PolicyRulesConfig {
   try {
-    const configPath = path.resolve(
-      __dirname,
-      '../../src/policy/policy-config.json',
-    );
+    const configPath = path.resolve(__dirname, '../../src/policy/policy-config.json');
     if (fs.existsSync(configPath)) {
       return JSON.parse(fs.readFileSync(configPath, 'utf8'));
     }
@@ -38,8 +31,7 @@ function loadDefaultConfig(): PolicyRulesConfig {
         nextAttemptOffsetDays: 1,
         ruleIdMaxAttempts: 'CARD-MAX-ATTEMPTS-001',
         ruleIdOffset: 'CARD-RETRY-OFFSET-001',
-        description:
-          'Card tokenized auto-debit max 4 attempts with minimum 1-day spacing',
+        description: 'Card tokenized auto-debit max 4 attempts with minimum 1-day spacing',
       },
       upi_autopay: {
         maxAttempts: 4,
@@ -63,8 +55,7 @@ function loadDefaultConfig(): PolicyRulesConfig {
           KKBK: 3,
         },
         ruleIdMaxAttempts: 'ENACH-BANK-RETRY-CAP-001',
-        description:
-          'E-NACH clearing standing instructions per-bank retry limits',
+        description: 'E-NACH clearing standing instructions per-bank retry limits',
       },
     },
     global: {
@@ -160,9 +151,7 @@ export function decide(
     maxAttemptRuleId = config.rails.upi_autopay.ruleIdMaxAttempts;
   } else if (context.rail === 'enach') {
     const bank = context.bankCode?.toUpperCase() || '';
-    maxAttempts =
-      config.rails.enach.bankOverrides[bank] ??
-      config.rails.enach.defaultMaxAttempts;
+    maxAttempts = config.rails.enach.bankOverrides[bank] ?? config.rails.enach.defaultMaxAttempts;
     maxAttemptRuleId = config.rails.enach.ruleIdMaxAttempts;
   }
 
@@ -186,17 +175,13 @@ export function decide(
   // 5. UPI AutoPay RBI AFA Threshold Limit Enforcement
   if (context.rail === 'upi_autopay' && context.amountPaise) {
     const isCategoryMcc =
-      context.mccCode &&
-      config.rails.upi_autopay.categoryMccList.includes(context.mccCode);
+      context.mccCode && config.rails.upi_autopay.categoryMccList.includes(context.mccCode);
 
     const threshold = isCategoryMcc
       ? config.rails.upi_autopay.categoryAfaThresholdPaise
       : config.rails.upi_autopay.standardAfaThresholdPaise;
 
-    if (
-      context.amountPaise > threshold &&
-      context.proposedAction === 'retry'
-    ) {
+    if (context.amountPaise > threshold && context.proposedAction === 'retry') {
       return {
         result: 'MODIFY',
         finalAction: 'proactive_nudge',

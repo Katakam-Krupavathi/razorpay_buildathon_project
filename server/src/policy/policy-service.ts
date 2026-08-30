@@ -1,9 +1,6 @@
 import crypto from 'node:crypto';
 import pg from 'pg';
-import type {
-  PolicyDecisionRecord,
-  StoredEvent,
-} from '@recovery/shared';
+import type { PolicyDecisionRecord, StoredEvent } from '@recovery/shared';
 import { EventStore } from '../event-store/event-store.js';
 import { getPool } from '../db/connection.js';
 import { decide } from './engine.js';
