@@ -371,11 +371,38 @@ export interface ERVComputation {
 }
 
 // ============================================================================
-// Recovery Planner & Strategies
+// Recovery Planner & Strategies (Zero Execution Authority)
 // ============================================================================
 
+export type PlannerActionType =
+  | 'retry'
+  | 'schedule_retry'
+  | 'proactive_nudge'
+  | 'grace_period'
+  | 'pause'
+  | 'escalate'
+  | 'NO_ACTION';
+
+export interface ProposedActionRecord {
+  proposalId: string;
+  instrumentId: string;
+  subscriptionId: string | null;
+  proposedAction: PlannerActionType;
+  rootCause: RootCauseType;
+  expectedRecoveryValue: number; // in paise
+  expectedRecoveryValueRupees: number; // in rupees
+  reasoning: string;
+  confidence: number; // 0.00 to 1.00
+  parameters: Record<string, unknown>;
+  evaluatedAt: string;
+}
+
 export type ExecutionRail =
-  'upi_autopay' | 'card_charge' | 'dunning_link' | 'whatsapp_pay' | 'manual_escalation';
+  | 'upi_autopay'
+  | 'card_charge'
+  | 'dunning_link'
+  | 'whatsapp_pay'
+  | 'manual_escalation';
 
 export interface RecoveryStep {
   stepNumber: number;
