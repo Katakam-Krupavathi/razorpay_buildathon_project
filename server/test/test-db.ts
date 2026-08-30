@@ -71,10 +71,13 @@ export async function createTestDatabase(): Promise<TestDatabase> {
 
     CREATE TABLE health_snapshots (
       snapshot_id VARCHAR(255) PRIMARY KEY,
-      subscription_id VARCHAR(255) NOT NULL,
-      risk_score NUMERIC(5, 4) NOT NULL DEFAULT 0.0000,
-      failure_category VARCHAR(100) NOT NULL,
-      churn_probability NUMERIC(5, 4) NOT NULL DEFAULT 0.0000,
+      instrument_id VARCHAR(255) NULL,
+      subscription_id VARCHAR(255) NULL,
+      health_score NUMERIC(5, 4) NOT NULL DEFAULT 1.0000,
+      trajectory VARCHAR(50) NOT NULL DEFAULT 'HEALTHY',
+      root_cause VARCHAR(100) NOT NULL DEFAULT 'NONE',
+      recovery_probability NUMERIC(5, 4) NOT NULL DEFAULT 1.0000,
+      features JSONB NOT NULL DEFAULT '{}',
       computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
