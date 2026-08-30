@@ -4,10 +4,7 @@ import type {
   ERVCalculationResult,
   RecoveryActionType,
 } from '@recovery/shared';
-import {
-  determineRecommendedAction,
-  getActionSuccessRate,
-} from './erv-config.js';
+import { determineRecommendedAction, getActionSuccessRate } from './erv-config.js';
 
 export interface ERVOptions {
   customAmountAtRiskPaise?: number;
@@ -30,21 +27,14 @@ export function calculateERV(
   // Amount at risk: Monthly recurring value (annualized_value / 12) or custom override
   const amountAtRisk =
     options?.customAmountAtRiskPaise ??
-    (instrument.annualized_value > 0
-      ? Math.round(instrument.annualized_value / 12)
-      : 299900); // fallback ₹2,999
+    (instrument.annualized_value > 0 ? Math.round(instrument.annualized_value / 12) : 299900); // fallback ₹2,999
 
   const recommendedAction =
-    options?.overrideAction ||
-    determineRecommendedAction(healthResult.rootCause, instrument.rail);
+    options?.overrideAction || determineRecommendedAction(healthResult.rootCause, instrument.rail);
 
-  const expectedActionSuccessRate = getActionSuccessRate(
-    instrument.rail,
-    recommendedAction,
-  );
+  const expectedActionSuccessRate = getActionSuccessRate(instrument.rail, recommendedAction);
 
-  const rawERV =
-    amountAtRisk * healthResult.recoveryProbability * expectedActionSuccessRate;
+  const rawERV = amountAtRisk * healthResult.recoveryProbability * expectedActionSuccessRate;
 
   const expectedRecoveryValue = Math.round(rawERV);
   const expectedRecoveryValueRupees = Math.round(expectedRecoveryValue / 100);

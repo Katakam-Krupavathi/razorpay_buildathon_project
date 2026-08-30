@@ -57,10 +57,9 @@ describe('HealthService & BatchRiskRunner Integration Tests', () => {
     expect(result.erv.expectedRecoveryValueRupees).toBeGreaterThan(0);
 
     // 4. Verify health_snapshots table in DB
-    const snapRows = await pool.query(
-      'SELECT * FROM health_snapshots WHERE snapshot_id = $1;',
-      [result.snapshotId],
-    );
+    const snapRows = await pool.query('SELECT * FROM health_snapshots WHERE snapshot_id = $1;', [
+      result.snapshotId,
+    ]);
     expect(snapRows.rows).toHaveLength(1);
     expect(Number(snapRows.rows[0].health_score)).toBe(1.0);
     expect(snapRows.rows[0].trajectory).toBe('HEALTHY');

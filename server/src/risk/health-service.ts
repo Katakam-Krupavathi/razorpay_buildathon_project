@@ -1,10 +1,6 @@
 import crypto from 'node:crypto';
 import pg from 'pg';
-import type {
-  DbInstrument,
-  HealthEvaluationResult,
-  ERVCalculationResult,
-} from '@recovery/shared';
+import type { DbInstrument, HealthEvaluationResult, ERVCalculationResult } from '@recovery/shared';
 import { EventStore } from '../event-store/event-store.js';
 import { getPool } from '../db/connection.js';
 import { evaluateInstrumentHealth, type ScorerOptions } from './scorer.js';

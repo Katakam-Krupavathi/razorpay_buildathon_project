@@ -12,13 +12,19 @@ export async function runRiskAnalysisCli(): Promise<BatchRiskAnalysisResult> {
   const pool = getPool();
   const runner = new BatchRiskRunner(undefined, pool);
 
-  console.log('[Risk Intelligence] Running batch risk scoring & ERV analysis across all instruments...');
+  console.log(
+    '[Risk Intelligence] Running batch risk scoring & ERV analysis across all instruments...',
+  );
   const result = await runner.runBatchAnalysis();
 
   console.log('\n================ RISK INTELLIGENCE BATCH SUMMARY ================');
   console.log(`Total Instruments Evaluated : ${result.totalInstrumentsEvaluated}`);
-  console.log(`Total Monthly ARR at Risk   : ₹${result.totalMonthlyAmountAtRiskRupees.toLocaleString('en-IN')}`);
-  console.log(`Total Expected Recovery (ERV): ₹${result.totalExpectedRecoveryValueRupees.toLocaleString('en-IN')}`);
+  console.log(
+    `Total Monthly ARR at Risk   : ₹${result.totalMonthlyAmountAtRiskRupees.toLocaleString('en-IN')}`,
+  );
+  console.log(
+    `Total Expected Recovery (ERV): ₹${result.totalExpectedRecoveryValueRupees.toLocaleString('en-IN')}`,
+  );
 
   console.log('\n--- Trajectory Breakdown ---');
   console.log(`HEALTHY (Score >= 0.70)   : ${result.countsByTrajectory.HEALTHY}`);

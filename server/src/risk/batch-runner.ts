@@ -54,9 +54,7 @@ export class BatchRiskRunner {
    * Evaluates all instruments in the database and generates a ranked Opportunity Queue
    * sorted in descending order of Expected Recovery Value (ERV).
    */
-  async runBatchAnalysis(
-    options?: ScorerOptions & ERVOptions,
-  ): Promise<BatchRiskAnalysisResult> {
+  async runBatchAnalysis(options?: ScorerOptions & ERVOptions): Promise<BatchRiskAnalysisResult> {
     const instrumentsRes = await this.pool.query<DbInstrument>(
       'SELECT * FROM instruments ORDER BY created_at ASC;',
     );
@@ -110,32 +108,28 @@ export class BatchRiskRunner {
     // Rank by descending ERV (Highest financial value recovery opportunities first)
     evaluatedItems.sort((a, b) => b.erv.expectedRecoveryValue - a.erv.expectedRecoveryValue);
 
-    const opportunityQueue: OpportunityQueueItem[] = evaluatedItems.map(
-      (item, idx) => ({
-        rank: idx + 1,
-        instrumentId: item.instrument.instrument_id,
-        subscriptionId: item.instrument.subscription_id,
-        rail: item.instrument.rail,
-        ltvTier: item.instrument.ltv_tier,
-        monthlyAmountPaise: item.erv.amountAtRisk,
-        monthlyAmountRupees: Math.round(item.erv.amountAtRisk / 100),
-        healthScore: item.health.healthScore,
-        trajectory: item.health.trajectory,
-        rootCause: item.health.rootCause,
-        recoveryProbability: item.health.recoveryProbability,
-        recommendedAction: item.erv.recommendedAction,
-        expectedActionSuccessRate: item.erv.expectedActionSuccessRate,
-        expectedRecoveryValuePaise: item.erv.expectedRecoveryValue,
-        expectedRecoveryValueRupees: item.erv.expectedRecoveryValueRupees,
-      }),
-    );
+    const opportunityQueue: OpportunityQueueItem[] = evaluatedItems.map((item, idx) => ({
+      rank: idx + 1,
+      instrumentId: item.instrument.instrument_id,
+      subscriptionId: item.instrument.subscription_id,
+      rail: item.instrument.rail,
+      ltvTier: item.instrument.ltv_tier,
+      monthlyAmountPaise: item.erv.amountAtRisk,
+      monthlyAmountRupees: Math.round(item.erv.amountAtRisk / 100),
+      healthScore: item.health.healthScore,
+      trajectory: item.health.trajectory,
+      rootCause: item.health.rootCause,
+      recoveryProbability: item.health.recoveryProbability,
+      recommendedAction: item.erv.recommendedAction,
+      expectedActionSuccessRate: item.erv.expectedActionSuccessRate,
+      expectedRecoveryValuePaise: item.erv.expectedRecoveryValue,
+      expectedRecoveryValueRupees: item.erv.expectedRecoveryValueRupees,
+    }));
 
     return {
       totalInstrumentsEvaluated: instruments.length,
       totalMonthlyAmountAtRiskRupees: Math.round(totalAmountAtRiskPaise / 100),
-      totalExpectedRecoveryValueRupees: Math.round(
-        totalExpectedRecoveryValuePaise / 100,
-      ),
+      totalExpectedRecoveryValueRupees: Math.round(totalExpectedRecoveryValuePaise / 100),
       countsByTrajectory,
       countsByRootCause,
       opportunityQueue,

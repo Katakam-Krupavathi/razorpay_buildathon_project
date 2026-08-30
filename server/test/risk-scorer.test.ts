@@ -54,7 +54,12 @@ describe('Risk Intelligence Layer & Scorer Unit Tests', () => {
     };
   }
 
-  function createMockFailEvent(seq: number, daysAgo: number, errorCode: string, eventType = 'subscription.pending'): StoredEvent {
+  function createMockFailEvent(
+    seq: number,
+    daysAgo: number,
+    errorCode: string,
+    eventType = 'subscription.pending',
+  ): StoredEvent {
     const timestamp = new Date(Date.parse(REF_TIME) - daysAgo * 86400 * 1000).toISOString();
     return {
       eventId: `evt_fail_${seq}`,
@@ -177,7 +182,10 @@ describe('Risk Intelligence Layer & Scorer Unit Tests', () => {
     it('7. should classify trajectory boundary exactly: 0.70 is HEALTHY, 0.69 is DEGRADING', () => {
       // 2 soft declines: 1.0 - 0.20*1 - 0.15*1 = 0.65 -> DEGRADING
       const inst = createMockInstrument();
-      const events = [createMockChargeEvent(1, 60), createMockFailEvent(2, 2, 'INSUFFICIENT_FUNDS')];
+      const events = [
+        createMockChargeEvent(1, 60),
+        createMockFailEvent(2, 2, 'INSUFFICIENT_FUNDS'),
+      ];
 
       const res = evaluateInstrumentHealth(inst, events, { referenceTime: REF_TIME });
 
@@ -216,7 +224,7 @@ describe('Risk Intelligence Layer & Scorer Unit Tests', () => {
 
       expect(res.featureVector.is_over_afa_threshold).toBe(true);
       expect(res.rootCause).toBe('AFA_PENDING');
-      expect(res.recoveryProbability).toBe(0.70);
+      expect(res.recoveryProbability).toBe(0.7);
     });
 
     it('10. should identify hard declines (USER_CANCELLED_MANDATE) and classify as HARD_DECLINE_PATTERN', () => {
@@ -227,7 +235,7 @@ describe('Risk Intelligence Layer & Scorer Unit Tests', () => {
 
       expect(res.rootCause).toBe('HARD_DECLINE_PATTERN');
       expect(res.trajectory).toBe('TERMINAL');
-      expect(res.recoveryProbability).toBe(0.20);
+      expect(res.recoveryProbability).toBe(0.2);
     });
 
     it('11. should penalize revoked mandate as MANDATE_INACTIVE and TERMINAL', () => {
@@ -239,7 +247,7 @@ describe('Risk Intelligence Layer & Scorer Unit Tests', () => {
       expect(res.healthScore).toBe(0.15); // 1.0 - 0.85 = 0.15
       expect(res.trajectory).toBe('TERMINAL');
       expect(res.rootCause).toBe('MANDATE_INACTIVE');
-      expect(res.recoveryProbability).toBe(0.10);
+      expect(res.recoveryProbability).toBe(0.1);
     });
 
     it('12. should produce a fully explainable, transparent feature vector with 11 keys', () => {

@@ -18,29 +18,29 @@ export const ACTION_SUCCESS_RATE_MATRIX: Record<
   card: {
     smart_retry_optimal_window: 0.72,
     pre_expiry_card_update_link: 0.88,
-    mandate_limit_upgrade_link: 0.50,
-    vpa_collect_request: 0.40,
+    mandate_limit_upgrade_link: 0.5,
+    vpa_collect_request: 0.4,
     dunning_step_up_auth: 0.55,
     direct_debit_resubmission: 0.45,
-    manual_escalation: 0.30,
+    manual_escalation: 0.3,
   },
   upi_autopay: {
-    smart_retry_optimal_window: 0.80,
-    pre_expiry_card_update_link: 0.40,
+    smart_retry_optimal_window: 0.8,
+    pre_expiry_card_update_link: 0.4,
     mandate_limit_upgrade_link: 0.68,
     vpa_collect_request: 0.75,
     dunning_step_up_auth: 0.65,
-    direct_debit_resubmission: 0.50,
+    direct_debit_resubmission: 0.5,
     manual_escalation: 0.35,
   },
   enach: {
     smart_retry_optimal_window: 0.62,
-    pre_expiry_card_update_link: 0.30,
+    pre_expiry_card_update_link: 0.3,
     mandate_limit_upgrade_link: 0.55,
-    vpa_collect_request: 0.50,
-    dunning_step_up_auth: 0.50,
+    vpa_collect_request: 0.5,
+    dunning_step_up_auth: 0.5,
     direct_debit_resubmission: 0.65,
-    manual_escalation: 0.30,
+    manual_escalation: 0.3,
   },
 };
 
@@ -53,14 +53,10 @@ export function determineRecommendedAction(
 ): RecoveryActionType {
   switch (rootCause) {
     case 'CARD_EXPIRY_RISK':
-      return rail === 'card'
-        ? 'pre_expiry_card_update_link'
-        : 'smart_retry_optimal_window';
+      return rail === 'card' ? 'pre_expiry_card_update_link' : 'smart_retry_optimal_window';
 
     case 'AFA_PENDING':
-      return rail === 'upi_autopay'
-        ? 'mandate_limit_upgrade_link'
-        : 'dunning_step_up_auth';
+      return rail === 'upi_autopay' ? 'mandate_limit_upgrade_link' : 'dunning_step_up_auth';
 
     case 'REPEATED_SOFT_DECLINE':
       return 'smart_retry_optimal_window';
@@ -86,13 +82,10 @@ export function determineRecommendedAction(
 /**
  * Looks up the benchmark expected success rate for an action on a given rail.
  */
-export function getActionSuccessRate(
-  rail: InstrumentRail,
-  action: RecoveryActionType,
-): number {
+export function getActionSuccessRate(rail: InstrumentRail, action: RecoveryActionType): number {
   const railMatrix = ACTION_SUCCESS_RATE_MATRIX[rail];
   if (!railMatrix || typeof railMatrix[action] !== 'number') {
-    return 0.50; // Fallback default
+    return 0.5; // Fallback default
   }
   return railMatrix[action];
 }

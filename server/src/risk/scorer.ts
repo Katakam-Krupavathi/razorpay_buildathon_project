@@ -36,9 +36,7 @@ export function evaluateInstrumentHealth(
   events: StoredEvent[],
   options?: ScorerOptions,
 ): HealthEvaluationResult {
-  const refTime = options?.referenceTime
-    ? new Date(options.referenceTime)
-    : new Date();
+  const refTime = options?.referenceTime ? new Date(options.referenceTime) : new Date();
 
   // 1. Extract chronological events for this instrument
   const sortedEvents = [...events].sort(
@@ -55,7 +53,8 @@ export function evaluateInstrumentHealth(
   let lastEventType = 'none';
 
   // Traverse events to gather signals
-  const paymentEvents: Array<{ isSuccess: boolean; declineCode?: string; isOverAfa?: boolean }> = [];
+  const paymentEvents: Array<{ isSuccess: boolean; declineCode?: string; isOverAfa?: boolean }> =
+    [];
 
   for (const event of sortedEvents) {
     lastEventType = event.eventType;
@@ -129,17 +128,17 @@ export function evaluateInstrumentHealth(
   if (instrument.mandate_status === 'revoked' || instrument.mandate_status === 'expired') {
     score -= 0.85;
   } else if (instrument.mandate_status === 'paused') {
-    score -= 0.40;
+    score -= 0.4;
   }
 
   // Hard decline penalties
   if (hasHardDecline) {
-    score -= 0.50;
+    score -= 0.5;
   }
 
   // Consecutive trailing failures
   if (consecutiveFailures > 0) {
-    score -= 0.20 * Math.min(consecutiveFailures, 3);
+    score -= 0.2 * Math.min(consecutiveFailures, 3);
   }
 
   // Recent 3 cycles failure rate
@@ -150,7 +149,7 @@ export function evaluateInstrumentHealth(
   // Card expiry penalties
   if (instrument.rail === 'card' && daysToExpiry !== null) {
     if (isCardExpired) {
-      score -= 0.70;
+      score -= 0.7;
     } else if (isNearCardExpiry) {
       // Linear penalty from 0 to 20 days: 0 days -> -0.35, 20 days -> -0.00
       const days = Math.max(0, daysToExpiry);
@@ -160,7 +159,7 @@ export function evaluateInstrumentHealth(
 
   // AFA limit over threshold penalty
   if (isOverAfaThreshold && instrument.rail === 'upi_autopay') {
-    score -= 0.30;
+    score -= 0.3;
   }
 
   // Reliability bonus for consistent historical success
@@ -173,9 +172,9 @@ export function evaluateInstrumentHealth(
 
   // 4. Trajectory Determination
   let trajectory: TrajectoryType;
-  if (healthScore >= 0.70) {
+  if (healthScore >= 0.7) {
     trajectory = 'HEALTHY';
-  } else if (healthScore >= 0.30) {
+  } else if (healthScore >= 0.3) {
     trajectory = 'DEGRADING';
   } else {
     trajectory = 'TERMINAL';
@@ -193,14 +192,14 @@ export function evaluateInstrumentHealth(
     rootCause = 'AFA_PENDING';
   } else if (failureCountLast3Cycles > 0 || consecutiveFailures > 0) {
     rootCause = 'REPEATED_SOFT_DECLINE';
-  } else if (healthScore >= 0.70) {
+  } else if (healthScore >= 0.7) {
     rootCause = 'NONE';
   } else {
     rootCause = 'UNKNOWN';
   }
 
   // 6. Recovery Probability Calculation
-  let recoveryProb = 0.50;
+  let recoveryProb = 0.5;
   switch (rootCause) {
     case 'NONE':
       recoveryProb = 0.98;
@@ -212,24 +211,24 @@ export function evaluateInstrumentHealth(
         // High recovery if proactive token migration link is triggered early
         recoveryProb = 0.85 - (20 - Math.max(0, daysToExpiry)) * 0.02;
       } else {
-        recoveryProb = 0.60;
+        recoveryProb = 0.6;
       }
       break;
     case 'REPEATED_SOFT_DECLINE':
-      recoveryProb = Math.max(0.35, Math.min(0.85, healthScore * 0.90));
+      recoveryProb = Math.max(0.35, Math.min(0.85, healthScore * 0.9));
       break;
     case 'AFA_PENDING':
-      recoveryProb = 0.70;
+      recoveryProb = 0.7;
       break;
     case 'HARD_DECLINE_PATTERN':
-      recoveryProb = 0.20;
+      recoveryProb = 0.2;
       break;
     case 'MANDATE_INACTIVE':
-      recoveryProb = 0.10;
+      recoveryProb = 0.1;
       break;
     case 'UNKNOWN':
     default:
-      recoveryProb = 0.40;
+      recoveryProb = 0.4;
       break;
   }
 
@@ -250,7 +249,8 @@ export function evaluateInstrumentHealth(
     is_over_afa_threshold: isOverAfaThreshold,
     mandate_status: instrument.mandate_status,
     last_event_type: lastEventType,
-    issuer_prior: instrument.rail === 'upi_autopay' ? 0.88 : instrument.rail === 'card' ? 0.82 : 0.75,
+    issuer_prior:
+      instrument.rail === 'upi_autopay' ? 0.88 : instrument.rail === 'card' ? 0.82 : 0.75,
   };
 
   return {
