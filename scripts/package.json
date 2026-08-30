@@ -11,6 +11,7 @@
     "db:reset": "tsx src/db-reset.ts",
     "db:seed": "tsx src/seed-events.ts",
     "seed:synthetic": "tsx src/synthetic/index.ts",
+    "risk:analyze": "tsx src/run-risk-analysis.ts",
     "razorpay:seed-test-data": "tsx src/create-test-data.ts",
     "test": "vitest run"
   },
