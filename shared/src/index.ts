@@ -711,6 +711,114 @@ export interface RecoveryAttribution {
 }
 
 // ============================================================================
+// Phase 11 Decision Trace & Compliance Audit Models
+// ============================================================================
+
+export type TraceStage =
+  | 'detected'
+  | 'diagnosed'
+  | 'proposed'
+  | 'permitted'
+  | 'circuit_breaker_check'
+  | 'verified'
+  | 'executed'
+  | 'escalated'
+  | 'blocked'
+  | 'outcome';
+
+export interface DecisionTraceStep {
+  stage: TraceStage;
+  title: string;
+  timestamp: string;
+  actor: EventActor;
+  eventId?: string;
+  summary: string;
+  details: Record<string, unknown>;
+}
+
+export interface DecisionTrace {
+  entityId: string;
+  subscriptionId: string;
+  instrumentId: string;
+  rail: string;
+  mandateStatus: string;
+  annualizedValuePaise: number;
+  narrative: string;
+  currentHealth: HealthEvaluationResult | null;
+  currentPlan: ProposedActionRecord | null;
+  currentPolicyDecision: PolicyDecisionRecord | null;
+  currentOutcome: DbRecoveryOutcome | null;
+  escalation: DbEscalationRecord | null;
+  steps: DecisionTraceStep[];
+  totalEventsCount: number;
+  chainValid: boolean;
+  assembledAt: string;
+}
+
+export interface GracePeriodAuditItem {
+  subscriptionId: string;
+  instrumentId: string;
+  rail: string;
+  annualizedValuePaise: number;
+  pausedAt: string;
+  rootCause: string;
+  reasoning: string;
+  matchedRuleId: string;
+  gracePeriodDays: number;
+  status: string;
+}
+
+export interface UpiAutopayCapAuditItem {
+  subscriptionId: string;
+  instrumentId: string;
+  totalAttempts: number;
+  maxAllowedAttempts: number;
+  compliant: boolean;
+  attemptTimestamps: string[];
+  outcomes: string[];
+  currentMandateStatus: string;
+}
+
+export interface StaleStateAuditItem {
+  subscriptionId: string;
+  instrumentId: string;
+  rail: string;
+  blockedAt: string;
+  attemptedAction: string;
+  cachedMandateStatus: string;
+  liveMandateStatus: string;
+  reason: string;
+  escalationId?: string;
+}
+
+export interface CircuitBreakerTripAuditItem {
+  cohortKey: string;
+  rail: string;
+  trippedAt: string;
+  sampleSize: number;
+  failureRate: number;
+  threshold: number;
+  reason: string;
+  currentState: string;
+  resetAt?: string | null;
+}
+
+export interface ComplianceAuditReport {
+  generatedAt: string;
+  gracePeriodPauses: GracePeriodAuditItem[];
+  upiAutopayCaps: UpiAutopayCapAuditItem[];
+  staleStateBlocks: StaleStateAuditItem[];
+  circuitBreakerTrips: CircuitBreakerTripAuditItem[];
+  summary: {
+    totalGracePeriodPauses: number;
+    totalUpiInstrumentsAudited: number;
+    upiCapComplianceRatePercent: number;
+    totalStaleStateBlocks: number;
+    totalCircuitBreakerTrips: number;
+  };
+}
+
+// ============================================================================
 // Control Plane System Health & Status
 // ============================================================================
 
