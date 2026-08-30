@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newDb } from 'pg-mem';
+import { newDb, DataType } from 'pg-mem';
 import pg from 'pg';
 import { EventStore } from '@recovery/server';
 import { PRNG } from '../src/synthetic/prng.js';
@@ -129,7 +129,7 @@ describe('Synthetic Instrument & Subscription Data Generator', () => {
       const db = newDb();
       db.public.registerFunction({
         name: 'now',
-        returns: 'timestamptz',
+        returns: DataType.timestamp,
         implementation: () => new Date().toISOString(),
       });
 

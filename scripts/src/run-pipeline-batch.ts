@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { newDb } from 'pg-mem';
+import { newDb, DataType } from 'pg-mem';
 import pg from 'pg';
 import {
   RecoveryPipelineOrchestrator,
@@ -18,7 +18,7 @@ function createInMemoryDatabase(): { pool: pg.Pool; eventStore: EventStore } {
 
   db.public.registerFunction({
     name: 'now',
-    returns: 'timestamptz',
+    returns: DataType.timestamp,
     implementation: () => new Date().toISOString(),
   });
 

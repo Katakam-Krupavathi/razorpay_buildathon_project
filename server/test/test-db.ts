@@ -1,4 +1,4 @@
-import { newDb, IMemoryDb } from 'pg-mem';
+import { newDb, IMemoryDb, DataType } from 'pg-mem';
 import pg, { QueryResultRow } from 'pg';
 
 export interface TestPool extends pg.Pool {
@@ -20,7 +20,7 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   // Register now() timestamp function
   db.public.registerFunction({
     name: 'now',
-    returns: 'timestamptz',
+    returns: DataType.timestamp,
     implementation: () => new Date().toISOString(),
   });
 

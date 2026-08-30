@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { newDb } from 'pg-mem';
+import { newDb, DataType } from 'pg-mem';
 import pg from 'pg';
 import { EventStore } from '@recovery/server';
 import { runHealthCheck } from '../src/health-check.js';
@@ -16,7 +16,7 @@ describe('Scripts Sanity and Synthetic Seeding Test', () => {
     const db = newDb();
     db.public.registerFunction({
       name: 'now',
-      returns: 'timestamptz',
+      returns: DataType.timestamp,
       implementation: () => new Date().toISOString(),
     });
 
