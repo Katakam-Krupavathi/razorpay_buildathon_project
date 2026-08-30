@@ -13,6 +13,7 @@
     "seed:synthetic": "tsx src/synthetic/index.ts",
     "risk:analyze": "tsx src/run-risk-analysis.ts",
     "planner:batch": "tsx src/run-planner-batch.ts",
+    "policy:batch": "tsx src/run-policy-batch.ts",
     "razorpay:seed-test-data": "tsx src/create-test-data.ts",
     "test": "vitest run"
   },
