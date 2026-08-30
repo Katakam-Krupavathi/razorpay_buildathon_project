@@ -100,22 +100,6 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       status VARCHAR(50) NOT NULL,
       completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
-
-    CREATE TYPE escalation_status AS ENUM ('pending', 'in_review', 'resolved', 'dismissed');
-
-    CREATE TABLE escalations (
-      escalation_id VARCHAR(255) PRIMARY KEY,
-      subscription_id VARCHAR(255) NULL,
-      instrument_id VARCHAR(255) NOT NULL,
-      decision_id VARCHAR(255) NULL,
-      status escalation_status NOT NULL DEFAULT 'pending',
-      trigger_reason VARCHAR(255) NOT NULL,
-      metadata JSONB NOT NULL DEFAULT '{}',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      resolved_at TIMESTAMPTZ NULL,
-      resolved_by VARCHAR(255) NULL,
-      resolution_notes TEXT NULL
-    );
   `);
 
   // Create pg-mem adapter pool
