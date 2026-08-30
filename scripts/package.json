@@ -10,6 +10,7 @@
     "db:migrate": "tsx src/db-migrate.ts",
     "db:reset": "tsx src/db-reset.ts",
     "db:seed": "tsx src/seed-events.ts",
+    "seed:synthetic": "tsx src/synthetic/index.ts",
     "razorpay:seed-test-data": "tsx src/create-test-data.ts",
     "test": "vitest run"
   },
