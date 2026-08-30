@@ -85,15 +85,32 @@ export interface DbPolicyDecision {
   evaluated_at: string;
 }
 
+export type RecoveryType = 'proactive' | 'reactive' | 'none';
+
+export type RecoveryOutcomeStatus =
+  | 'recovered'
+  | 'halted'
+  | 'cancelled'
+  | 'untouched'
+  | 'in_progress';
+
 export interface DbRecoveryOutcome {
   outcome_id: string;
-  invoice_id: string;
+  invoice_id: string | null;
   subscription_id: string;
-  recovered_amount: number;
-  cost_incurred: number;
-  net_value_recovered: number;
-  status: string;
+  instrument_id: string | null;
+  at_risk_amount: number; // in paise
+  recovered_amount: number; // in paise
+  cost_incurred: number; // in paise
+  net_value_recovered: number; // in paise (recovered_amount - cost_incurred)
+  recovery_type: RecoveryType;
+  status: RecoveryOutcomeStatus;
+  estimated_baseline_outcome: string;
+  baseline_recovered_estimate: number; // in paise
+  revenue_saved: number; // in paise
+  counterfactual_details: Record<string, unknown>;
   completed_at: string;
+  closed_at: string;
 }
 
 // ============================================================================
@@ -642,8 +659,43 @@ export interface PipelineBatchSummary {
 }
 
 // ============================================================================
-// Net Value Recovered (NVR) & Attribution
+// Net Value Recovered (NVR), Outcome Attribution & Counterfactual Models
 // ============================================================================
+
+export interface CounterfactualEvaluation {
+  instrumentId: string;
+  subscriptionId?: string | null;
+  recoveryType: RecoveryType;
+  atRiskAmountPaise: number;
+  recoveredAmountPaise: number;
+  estimatedBaselineOutcome: string;
+  baselineRecoveredEstimatePaise: number;
+  revenueSavedPaise: number;
+  method: string;
+  confidence: number;
+  details: Record<string, unknown>;
+}
+
+export interface AttributionScorecard {
+  totalMonitoredMRRPaise: number;
+  totalMonitoredARRPaise: number;
+  totalAtRiskMRRPaise: number;
+  totalRecoveredMRRPaise: number;
+  proactiveRecoveredMRRPaise: number;
+  reactiveRecoveredMRRPaise: number;
+  revenuePreventedMRRPaise: number;
+  untouchedMRRPaise: number;
+  unsafeBlockedActionsCount: number;
+  totalSubscriptionsCount: number;
+  recoveredSubscriptionsCount: number;
+  proactiveSubscriptionsCount: number;
+  reactiveSubscriptionsCount: number;
+  untouchedSubscriptionsCount: number;
+  escalatedSubscriptionsCount: number;
+  recoveryRatePercent: number;
+  netValueRecoveredPaise: number;
+  timestamp: string;
+}
 
 export interface RecoveryAttribution {
   attributionId: string;

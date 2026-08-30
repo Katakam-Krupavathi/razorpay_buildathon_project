@@ -92,13 +92,21 @@ export async function createTestDatabase(): Promise<TestDatabase> {
 
     CREATE TABLE recovery_outcomes (
       outcome_id VARCHAR(255) PRIMARY KEY,
-      invoice_id VARCHAR(255) NOT NULL,
+      invoice_id VARCHAR(255) NULL,
       subscription_id VARCHAR(255) NOT NULL,
+      instrument_id VARCHAR(255) NULL,
+      at_risk_amount BIGINT NOT NULL DEFAULT 0,
       recovered_amount BIGINT NOT NULL DEFAULT 0,
       cost_incurred BIGINT NOT NULL DEFAULT 0,
       net_value_recovered BIGINT NOT NULL DEFAULT 0,
+      recovery_type VARCHAR(50) NOT NULL DEFAULT 'none',
       status VARCHAR(50) NOT NULL,
-      completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      estimated_baseline_outcome VARCHAR(100) NOT NULL DEFAULT 'total_loss',
+      baseline_recovered_estimate BIGINT NOT NULL DEFAULT 0,
+      revenue_saved BIGINT NOT NULL DEFAULT 0,
+      counterfactual_details JSONB NOT NULL DEFAULT '{}',
+      completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      closed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
     CREATE TABLE escalation_queue (
