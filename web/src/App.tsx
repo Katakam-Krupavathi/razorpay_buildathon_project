@@ -1,185 +1,293 @@
-import { useState, useEffect } from 'react';
-import { ShieldCheck, Activity, RefreshCw, Zap, Cpu, Lock, CheckCircle2 } from 'lucide-react';
-import type { ControlPlaneHealth } from '@recovery/shared';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Zap,
+  RefreshCw,
+  TrendingUp,
+  Activity,
+  Lock,
+  CheckCircle2,
+} from 'lucide-react';
+import type {
+  AttributionScorecard,
+  OpportunityQueueItem,
+  InstrumentListItem,
+  CircuitBreakerStatus,
+  PipelineRunResponse,
+} from '@recovery/shared';
+import { ScorecardBanner } from './components/ScorecardBanner.js';
+import { ControlPanelBar } from './components/ControlPanelBar.js';
+import { OpportunityQueue } from './components/OpportunityQueue.js';
+import { InstrumentList } from './components/InstrumentList.js';
+import { CircuitBreakerPanel } from './components/CircuitBreakerPanel.js';
+import { DecisionTraceModal } from './components/DecisionTraceModal.js';
 
 export function App() {
-  const [health, setHealth] = useState<ControlPlaneHealth>({
-    status: 'healthy',
-    uptimeSeconds: 0,
-    database: 'connected',
-    redis: 'connected',
-    circuitBreaker: 'CLOSED',
-    version: '0.1.0',
-    timestamp: new Date().toISOString(),
-  });
+  const [activeTab, setActiveTab] = useState<'opportunities' | 'instruments' | 'circuit-breaker'>('opportunities');
+  const [scorecard, setScorecard] = useState<AttributionScorecard | null>(null);
+  const [opportunities, setOpportunities] = useState<OpportunityQueueItem[]>([]);
+  const [instruments, setInstruments] = useState<InstrumentListItem[]>([]);
+  const [circuitBreakers, setCircuitBreakers] = useState<CircuitBreakerStatus[]>([
+    {
+      cohortKey: 'rail:card',
+      state: 'CLOSED',
+      totalAttemptsInWindow: 0,
+      failedAttemptsInWindow: 0,
+      successAttemptsInWindow: 0,
+      currentSuccessRate: 1.0,
+      failureRate: 0.0,
+      trippedAt: null,
+      cooldownUntil: null,
+      openReason: null,
+      lastOutcomeAt: null,
+    },
+    {
+      cohortKey: 'rail:upi_autopay',
+      state: 'CLOSED',
+      totalAttemptsInWindow: 0,
+      failedAttemptsInWindow: 0,
+      successAttemptsInWindow: 0,
+      currentSuccessRate: 1.0,
+      failureRate: 0.0,
+      trippedAt: null,
+      cooldownUntil: null,
+      openReason: null,
+      lastOutcomeAt: null,
+    },
+    {
+      cohortKey: 'rail:enach',
+      state: 'CLOSED',
+      totalAttemptsInWindow: 0,
+      failedAttemptsInWindow: 0,
+      successAttemptsInWindow: 0,
+      currentSuccessRate: 1.0,
+      failureRate: 0.0,
+      trippedAt: null,
+      cooldownUntil: null,
+      openReason: null,
+      lastOutcomeAt: null,
+    },
+  ]);
+  const [selectedSubscriptionId, setSelectedSubscriptionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [pipelineRunning, setPipelineRunning] = useState<boolean>(false);
+  const [pipelineMessage, setPipelineMessage] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState(false);
-
-  const fetchHealth = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/health');
-      if (res.ok) {
-        const data = await res.json();
-        setHealth(data);
+      // 1. Fetch Attribution Scorecard
+      const scoreRes = await fetch('/api/attribution/scorecard');
+      if (scoreRes.ok) {
+        const scoreData = await scoreRes.json();
+        if (scoreData.success && scoreData.data) {
+          setScorecard(scoreData.data);
+        }
+      }
+
+      // 2. Fetch Opportunity Queue
+      const oppRes = await fetch('/api/opportunities');
+      if (oppRes.ok) {
+        const oppData = await oppRes.json();
+        if (oppData.success && Array.isArray(oppData.data)) {
+          setOpportunities(oppData.data);
+        }
+      }
+
+      // 3. Fetch Instruments Directory
+      const instRes = await fetch('/api/instruments');
+      if (instRes.ok) {
+        const instData = await instRes.json();
+        if (instData.success && Array.isArray(instData.data)) {
+          setInstruments(instData.data);
+        }
+      }
+
+      // 4. Fetch Circuit Breaker Statuses
+      const cbRes = await fetch('/api/circuit-breaker/status');
+      if (cbRes.ok) {
+        const cbData = await cbRes.json();
+        if (cbData.success && Array.isArray(cbData.cohorts)) {
+          setCircuitBreakers(cbData.cohorts);
+        }
       }
     } catch {
-      // Fallback for local preview without backend
-      setHealth((prev) => ({
-        ...prev,
-        uptimeSeconds: prev.uptimeSeconds + 10,
-        timestamp: new Date().toISOString(),
-      }));
+      // Network fallback for preview
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchHealth();
   }, []);
 
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const handleRunPipeline = async (): Promise<PipelineRunResponse | void> => {
+    setPipelineRunning(true);
+    setPipelineMessage(null);
+    try {
+      const res = await fetch('/api/pipeline/run', {
+        method: 'POST',
+      });
+      const data: PipelineRunResponse = await res.json();
+      if (data.success) {
+        setPipelineMessage(data.message);
+        await fetchDashboardData();
+        return data;
+      } else {
+        setPipelineMessage(`Pipeline run failed: ${data.message || 'Unknown error'}`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error executing pipeline batch';
+      setPipelineMessage(`Network error: ${msg}`);
+    } finally {
+      setPipelineRunning(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8 font-sans selection:bg-indigo-500 selection:text-white">
       {/* Top Header */}
-      <header className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between pb-8 border-b border-slate-800 gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
-              <Zap className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">
-                Autonomous Revenue Recovery Control Plane
+      <header className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-slate-800 gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-900/30 border border-indigo-400/30">
+            <Zap className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black tracking-tight text-white">
+                Revenue Command Center
               </h1>
-              <p className="text-sm text-slate-400">
-                Razorpay Mandate-Aware Subscription Recovery Engine
-              </p>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+                v0.1.0-RC
+              </span>
             </div>
+            <p className="text-xs text-slate-400">
+              Razorpay Mandate-Aware Autonomous Subscription Recovery & Safety Control Plane
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            System Operational
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Autonomous Engine Active</span>
           </div>
+
           <button
-            onClick={fetchHealth}
+            onClick={fetchDashboardData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-sm font-medium rounded-lg transition border border-slate-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-medium rounded-xl border border-slate-800 transition cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Sync</span>
           </button>
         </div>
       </header>
 
-      {/* Main Grid */}
-      <main className="max-w-7xl mx-auto mt-8 space-y-8">
-        {/* Status Highlights */}
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-sm font-medium">
-              <span>Control Status</span>
-              <Activity className="w-4 h-4 text-blue-400" />
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto mt-6 space-y-6">
+        {/* Pipeline Execution Notification Banner */}
+        {pipelineMessage && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/60 to-blue-950/60 border border-indigo-500/40 text-indigo-200 text-xs flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="font-medium">{pipelineMessage}</span>
             </div>
-            <div className="mt-3 text-2xl font-bold text-white capitalize">{health.status}</div>
-            <p className="text-xs text-slate-500 mt-1">Autonomous orchestration active</p>
+            <button
+              onClick={() => setPipelineMessage(null)}
+              className="text-xs font-bold text-slate-400 hover:text-white px-2 cursor-pointer"
+            >
+              ✕
+            </button>
           </div>
+        )}
 
-          <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-sm font-medium">
-              <span>Circuit Breaker</span>
-              <Lock className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="mt-3 text-2xl font-bold text-emerald-400">{health.circuitBreaker}</div>
-            <p className="text-xs text-slate-500 mt-1">Safety invariants verified</p>
-          </div>
+        {/* Action & Simulation Control Panel */}
+        <ControlPanelBar
+          onRunPipeline={handleRunPipeline}
+          onRefreshAll={fetchDashboardData}
+          loading={loading}
+          pipelineRunning={pipelineRunning}
+        />
 
-          <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-sm font-medium">
-              <span>Event Store</span>
-              <Cpu className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="mt-3 text-2xl font-bold text-white capitalize">{health.database}</div>
-            <p className="text-xs text-slate-500 mt-1">PostgreSQL 16 Engine</p>
-          </div>
+        {/* Top-Line Batch Scorecard Banner (Phase 10 Rollup APIs) */}
+        <ScorecardBanner scorecard={scorecard} loading={loading} />
 
-          <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div className="flex items-center justify-between text-slate-400 text-sm font-medium">
-              <span>Cache & Rate Limits</span>
-              <ShieldCheck className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div className="mt-3 text-2xl font-bold text-white capitalize">{health.redis}</div>
-            <p className="text-xs text-slate-500 mt-1">Redis 7 In-Memory Store</p>
-          </div>
-        </section>
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-1">
+          <button
+            onClick={() => setActiveTab('opportunities')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+              activeTab === 'opportunities'
+                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Top Opportunities Queue ({opportunities.length})</span>
+          </button>
 
-        {/* 5 Pillars Architecture Scaffolding */}
-        <section className="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-blue-400" />
-            Core Autonomous Recovery Pillars
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-              <div className="text-xs font-mono text-blue-400 uppercase tracking-wider">
-                Pillar 1
-              </div>
-              <h3 className="font-semibold text-white mt-1">Predict</h3>
-              <p className="text-xs text-slate-400 mt-2">
-                Risk taxonomy & Expected Recovery Value (ERV) engine evaluates failure root causes.
-              </p>
-            </div>
+          <button
+            onClick={() => setActiveTab('instruments')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+              activeTab === 'instruments'
+                ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Instruments & Sparklines ({instruments.length})</span>
+          </button>
 
-            <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-              <div className="text-xs font-mono text-emerald-400 uppercase tracking-wider">
-                Pillar 2
-              </div>
-              <h3 className="font-semibold text-white mt-1">Permit</h3>
-              <p className="text-xs text-slate-400 mt-2">
-                Autonomous Policy Engine evaluates customer churn risk & volume guardrails before
-                execution.
-              </p>
-            </div>
+          <button
+            onClick={() => setActiveTab('circuit-breaker')}
+            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+              activeTab === 'circuit-breaker'
+                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+            }`}
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Cohort Circuit Breakers ({circuitBreakers.length})</span>
+          </button>
+        </div>
 
-            <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-              <div className="text-xs font-mono text-amber-400 uppercase tracking-wider">
-                Pillar 3
-              </div>
-              <h3 className="font-semibold text-white mt-1">Verify</h3>
-              <p className="text-xs text-slate-400 mt-2">
-                Pre-execution mandate verification gateway checks instrument validity & pre-debit
-                rules.
-              </p>
-            </div>
+        {/* Tab Views */}
+        {activeTab === 'opportunities' && (
+          <OpportunityQueue
+            opportunities={opportunities}
+            loading={loading}
+            onSelectSubscription={(subId) => setSelectedSubscriptionId(subId)}
+          />
+        )}
 
-            <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-              <div className="text-xs font-mono text-purple-400 uppercase tracking-wider">
-                Pillar 4
-              </div>
-              <h3 className="font-semibold text-white mt-1">Execute</h3>
-              <p className="text-xs text-slate-400 mt-2">
-                Multi-rail orchestration across UPI AutoPay, cards, and dynamic dunning links.
-              </p>
-            </div>
+        {activeTab === 'instruments' && (
+          <InstrumentList
+            instruments={instruments}
+            loading={loading}
+            onSelectSubscription={(subId) => setSelectedSubscriptionId(subId)}
+          />
+        )}
 
-            <div className="p-4 rounded-lg bg-slate-900 border border-slate-800">
-              <div className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
-                Pillar 5
-              </div>
-              <h3 className="font-semibold text-white mt-1">Measure</h3>
-              <p className="text-xs text-slate-400 mt-2">
-                Net Value Recovered (NVR) accounting and cryptographic audit trail with replay
-                forensic logs.
-              </p>
-            </div>
-          </div>
-        </section>
+        {activeTab === 'circuit-breaker' && (
+          <CircuitBreakerPanel
+            cohorts={circuitBreakers}
+            loading={loading}
+            onRefresh={fetchDashboardData}
+          />
+        )}
       </main>
+
+      {/* Decision Trace Drill-Down Modal */}
+      {selectedSubscriptionId && (
+        <DecisionTraceModal
+          subscriptionId={selectedSubscriptionId}
+          onClose={() => setSelectedSubscriptionId(null)}
+        />
+      )}
     </div>
   );
 }
 
 export default App;
+
