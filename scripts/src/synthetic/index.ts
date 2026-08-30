@@ -106,7 +106,9 @@ export function formatMarkdownSummary(report: BatchSummaryReport): string {
 `;
 }
 
-export async function runGeneratorCli(args: string[] = process.argv.slice(2)): Promise<BatchSummaryReport> {
+export async function runGeneratorCli(
+  args: string[] = process.argv.slice(2),
+): Promise<BatchSummaryReport> {
   let count = 100;
   let seed = 42;
   let outputPath = path.resolve(process.cwd(), 'docs/SAMPLE_BATCH_SUMMARY.md');
@@ -123,19 +125,25 @@ export async function runGeneratorCli(args: string[] = process.argv.slice(2)): P
     }
   }
 
-  console.log(`[Synthetic Generator] Generating ${count} synthetic subscriptions with seed ${seed}...`);
+  console.log(
+    `[Synthetic Generator] Generating ${count} synthetic subscriptions with seed ${seed}...`,
+  );
 
   const generator = new SyntheticDataGenerator({ seed });
   const specs = generator.generate(count);
 
-  console.log(`[Synthetic Generator] Replaying and event-sourcing ${specs.length} subscriptions into EventStore...`);
+  console.log(
+    `[Synthetic Generator] Replaying and event-sourcing ${specs.length} subscriptions into EventStore...`,
+  );
   const seeder = new SyntheticDataSeeder();
   const seedResult = await seeder.seedBatch(specs);
 
   console.log(
     `[Synthetic Generator] Successfully seeded ${seedResult.subscriptionsSeeded} subscriptions with ${seedResult.eventsAppended} chained events.`,
   );
-  console.log(`[Synthetic Generator] Ledger Chain Integrity: ${seedResult.chainIntegrityValid ? 'VALID (100% Verified)' : 'FAILED'}`);
+  console.log(
+    `[Synthetic Generator] Ledger Chain Integrity: ${seedResult.chainIntegrityValid ? 'VALID (100% Verified)' : 'FAILED'}`,
+  );
 
   const report = computeSummaryReport(specs, seed, seedResult.eventsAppended);
 
@@ -153,8 +161,12 @@ export async function runGeneratorCli(args: string[] = process.argv.slice(2)): P
   console.log(`Total Events Chained: ${report.totalEventsSynthesized}`);
   console.log(`Total Simulated MRR : ₹${report.totalSimulatedMRR.toLocaleString('en-IN')}`);
   console.log(`Total Simulated ARR : ₹${report.totalSimulatedARR.toLocaleString('en-IN')}`);
-  console.log(`UPI AutoPay / Cards / E-NACH: ${report.countsByRail.upi_autopay} / ${report.countsByRail.card} / ${report.countsByRail.enach}`);
-  console.log(`Healthy / Degrading / Terminal: ${report.countsByProfile.HEALTHY} / ${report.countsByProfile.DEGRADING} / ${report.countsByProfile.TERMINAL}`);
+  console.log(
+    `UPI AutoPay / Cards / E-NACH: ${report.countsByRail.upi_autopay} / ${report.countsByRail.card} / ${report.countsByRail.enach}`,
+  );
+  console.log(
+    `Healthy / Degrading / Terminal: ${report.countsByProfile.HEALTHY} / ${report.countsByProfile.DEGRADING} / ${report.countsByProfile.TERMINAL}`,
+  );
   console.log(`Cards Near Expiry (0-20d): ${report.cardsNearExpiryCount}`);
   console.log(`UPI Over AFA Limit   : ${report.upiOverAfaCount}`);
   console.log(`Stale Cache Candidates: ${report.staleCacheCandidatesCount}`);

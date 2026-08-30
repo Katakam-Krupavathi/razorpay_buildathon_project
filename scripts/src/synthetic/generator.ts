@@ -1,10 +1,5 @@
 import { PRNG } from './prng.js';
-import type {
-  SyntheticSubscriptionSpec,
-  HealthProfile,
-  LtvTier,
-  AfaCategory,
-} from './types.js';
+import type { SyntheticSubscriptionSpec, HealthProfile, LtvTier, AfaCategory } from './types.js';
 import type { InstrumentRail, MandateStatusEnum, SubscriptionStatusEnum } from '@recovery/shared';
 
 const COMPANY_NAMES = [
@@ -41,14 +36,17 @@ const MCC_CATEGORIES: Array<{
 export interface GeneratorOptions {
   count?: number;
   seed?: number;
+  baseTimestamp?: number;
 }
 
 export class SyntheticDataGenerator {
   private prng: PRNG;
   private seed: number;
+  private baseTimestamp: number;
 
   constructor(options?: GeneratorOptions) {
     this.seed = options?.seed ?? 42;
+    this.baseTimestamp = options?.baseTimestamp ?? 1770000000000;
     this.prng = new PRNG(this.seed);
   }
 
@@ -136,7 +134,7 @@ export class SyntheticDataGenerator {
         cardDaysToExpiry = this.prng.nextInt(91, 720);
       }
 
-      const expiry = new Date(Date.now() + cardDaysToExpiry * 86400 * 1000);
+      const expiry = new Date(this.baseTimestamp + cardDaysToExpiry * 86400 * 1000);
       cardExpiryDate = expiry.toISOString();
     }
 
@@ -163,7 +161,12 @@ export class SyntheticDataGenerator {
       if (isOverAfaThreshold && rail === 'upi_autopay') {
         declineCode = 'MANDATE_LIMIT_EXCEEDED';
         failureReason = `Transaction amount ₹${monthlyAmount / 100} exceeds RBI AFA limit of ₹${upiAfaThreshold / 100}`;
-      } else if (isNearCardExpiry && rail === 'card' && cardDaysToExpiry !== null && cardDaysToExpiry <= 5) {
+      } else if (
+        isNearCardExpiry &&
+        rail === 'card' &&
+        cardDaysToExpiry !== null &&
+        cardDaysToExpiry <= 5
+      ) {
         declineCode = 'EXPIRED_CARD';
         failureReason = 'Card instrument expired or expiring during debit window';
       } else {
@@ -172,7 +175,8 @@ export class SyntheticDataGenerator {
           'TEMPORARY_BANK_DOWNTIME',
           'NETWORK_TIMEOUT',
         ]);
-        failureReason = 'Customer account balance below required debit amount or bank switch timeout';
+        failureReason =
+          'Customer account balance below required debit amount or bank switch timeout';
       }
     } else {
       // TERMINAL
@@ -186,7 +190,8 @@ export class SyntheticDataGenerator {
         'ACCOUNT_BLOCKED',
         'MAX_RETRIES_EXCEEDED',
       ]);
-      failureReason = 'Mandate revoked by user at bank/UPI app or permanent payment instrument invalidation';
+      failureReason =
+        'Mandate revoked by user at bank/UPI app or permanent payment instrument invalidation';
     }
 
     // 8. Event history count
@@ -207,7 +212,7 @@ export class SyntheticDataGenerator {
       customerName: `${company} (${index})`,
       customerEmail: `billing-${paddedId}@${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.test`,
       customerPhone: `+9198${this.prng.nextInt(10000000, 99999999)}`,
-      planId: `plan_tier_${ltvTier}_${index % 4 + 1}`,
+      planId: `plan_tier_${ltvTier}_${(index % 4) + 1}`,
       planName: `${ltvTier.toUpperCase()} Pro Plan (${mccConfig.category})`,
       instrumentId: `inst_${rail.slice(0, 4)}_${paddedId}`,
       rail,
@@ -227,7 +232,9 @@ export class SyntheticDataGenerator {
       initialStatus,
       finalStatus,
       historyEventCount,
-      createdAt: new Date(Date.now() - this.prng.nextInt(30, 365) * 86400 * 1000).toISOString(),
+      createdAt: new Date(
+        this.baseTimestamp - this.prng.nextInt(30, 365) * 86400 * 1000,
+      ).toISOString(),
       failureReason,
       declineCode,
     };

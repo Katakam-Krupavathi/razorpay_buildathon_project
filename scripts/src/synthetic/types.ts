@@ -1,18 +1,10 @@
-import type {
-  InstrumentRail,
-  MandateStatusEnum,
-  SubscriptionStatusEnum,
-} from '@recovery/shared';
+import type { InstrumentRail, MandateStatusEnum, SubscriptionStatusEnum } from '@recovery/shared';
 
 export type HealthProfile = 'HEALTHY' | 'DEGRADING' | 'TERMINAL';
 export type LtvTier = 'low' | 'medium' | 'high' | 'critical';
 
 export type AfaCategory =
-  | 'standard_retail'
-  | 'mutual_funds'
-  | 'insurance'
-  | 'education'
-  | 'credit_card';
+  'standard_retail' | 'mutual_funds' | 'insurance' | 'education' | 'credit_card';
 
 export interface SyntheticSubscriptionSpec {
   index: number;

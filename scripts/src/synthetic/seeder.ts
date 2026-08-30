@@ -87,7 +87,10 @@ export class SyntheticDataSeeder {
     eventsAppended++;
 
     // 2. Historical Successful Charges (subscription.charged)
-    const chargedCycles = Math.max(1, spec.historyEventCount - (spec.healthProfile === 'HEALTHY' ? 1 : 2));
+    const chargedCycles = Math.max(
+      1,
+      spec.historyEventCount - (spec.healthProfile === 'HEALTHY' ? 1 : 2),
+    );
 
     for (let cycle = 1; cycle <= chargedCycles; cycle++) {
       const chargeTime = baseDate + cycle * 30 * 86400 * 1000;
@@ -157,7 +160,8 @@ export class SyntheticDataSeeder {
               currency: 'INR',
               status: 'failed',
               error_code: spec.declineCode || 'BAD_REQUEST_PAYMENT_FAILED',
-              error_description: spec.failureReason || 'Payment failed during recurring debit attempt',
+              error_description:
+                spec.failureReason || 'Payment failed during recurring debit attempt',
               method: spec.rail,
               token_id: spec.instrumentId,
             },
