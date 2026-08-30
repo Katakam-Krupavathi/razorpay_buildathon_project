@@ -641,6 +641,7 @@ export interface PipelineInstrumentResult {
   verification?: PreActionVerificationRecord;
   execution?: ExecutionActionResult;
   escalation?: DbEscalationRecord;
+  outcome?: DbRecoveryOutcome;
   pipelineStatus: PipelineStatus;
   completedAt: string;
 }
@@ -654,6 +655,7 @@ export interface PipelineBatchSummary {
   blockedByCircuitBreakerCount: number;
   blockedByVerificationCount: number;
   noOpCount: number;
+  scorecard?: AttributionScorecard;
   wallClockMs: number;
   completedAt: string;
 }

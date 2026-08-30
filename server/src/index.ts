@@ -37,20 +37,26 @@ export * from './escalation/types.js';
 export * from './escalation/escalation-service.js';
 export * from './execution/types.js';
 export * from './execution/execution-service.js';
-export * from './routes/escalations.js';
 export * from './pipeline/types.js';
 export * from './pipeline/orchestrator.js';
+export * from './attribution/types.js';
+export * from './attribution/counterfactual-engine.js';
+export * from './attribution/attribution-service.js';
+export * from './routes/attribution.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { devHookRoutes } from './routes/dev-hooks.js';
 import { escalationRoutes, EscalationRouteOptions } from './routes/escalations.js';
+import { attributionRoutes, AttributionRouteOptions } from './routes/attribution.js';
 import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
 import { EscalationService } from './escalation/escalation-service.js';
+import { AttributionService } from './attribution/attribution-service.js';
 
 export interface AppOptions extends FastifyServerOptions {
   webhookOptions?: WebhookRouteOptions;
   circuitBreakerOptions?: CircuitBreakerRouteOptions;
   escalationOptions?: EscalationRouteOptions;
+  attributionOptions?: AttributionRouteOptions;
 }
 
 export async function buildApp(opts?: AppOptions) {
@@ -64,9 +70,10 @@ export async function buildApp(opts?: AppOptions) {
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: true });
 
-  // Initialize shared Circuit Breaker and Escalation Service
+  // Initialize shared Circuit Breaker, Escalation Service, and Attribution Service
   const circuitBreaker = opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
   const escalationService = opts?.escalationOptions?.escalationService || new EscalationService();
+  const attributionService = opts?.attributionOptions?.attributionService || new AttributionService();
 
   // Register Webhook Ingestion Routes
   await app.register(webhookRoutes, opts?.webhookOptions || {});
@@ -79,6 +86,9 @@ export async function buildApp(opts?: AppOptions) {
 
   // Register Escalation Workflow Routes
   await app.register(escalationRoutes, { escalationService });
+
+  // Register Attribution & Scorecard Routes
+  await app.register(attributionRoutes, { attributionService });
 
   // Root & Health Check Endpoints
   app.get('/', async () => {

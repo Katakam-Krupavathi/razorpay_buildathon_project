@@ -16,6 +16,7 @@ import { VerificationGateway } from '../verification/gateway.js';
 import { VerificationService } from '../verification/verification-service.js';
 import { ExecutionService } from '../execution/execution-service.js';
 import { EscalationService } from '../escalation/escalation-service.js';
+import { AttributionService } from '../attribution/attribution-service.js';
 import type { PipelineProcessOptions, PipelineBatchOptions } from './types.js';
 
 /**
@@ -28,6 +29,7 @@ import type { PipelineProcessOptions, PipelineBatchOptions } from './types.js';
  *   [4] Cohort Circuit Breaker Guard
  *   [5] Safety & Verification Gateway (Pre-Action Checks)
  *   [6] Execution Layer & Escalation Workflow
+ *   [7] Outcome Attribution & Counterfactual Financial Engine
  *
  * NOTE: This module has ZERO dependency on Fastify/HTTP server bootstrap.
  */
@@ -43,6 +45,7 @@ export class RecoveryPipelineOrchestrator {
   private verificationService: VerificationService;
   private executionService: ExecutionService;
   private escalationService: EscalationService;
+  private attributionService: AttributionService;
 
   constructor(dependencies?: {
     pool?: pg.Pool;
@@ -54,6 +57,7 @@ export class RecoveryPipelineOrchestrator {
     verificationGateway?: VerificationGateway;
     executionService?: ExecutionService;
     escalationService?: EscalationService;
+    attributionService?: AttributionService;
   }) {
     this.pool = dependencies?.pool || getPool();
     this.eventStore = dependencies?.eventStore || new EventStore(this.pool);
@@ -83,6 +87,9 @@ export class RecoveryPipelineOrchestrator {
         this.verificationGateway,
         this.eventStore,
       );
+    this.attributionService =
+      dependencies?.attributionService ||
+      new AttributionService(this.pool, this.eventStore);
   }
 
   /**
@@ -159,6 +166,14 @@ export class RecoveryPipelineOrchestrator {
         referenceTime: refTime,
       });
 
+      const outcome = await this.attributionService.evaluateAndRecord({
+        instrument,
+        healthSnapshot,
+        proposedPlan,
+        execution,
+        referenceTime: refTime,
+      });
+
       return {
         instrumentId,
         subscriptionId: instrument.subscription_id,
@@ -166,6 +181,7 @@ export class RecoveryPipelineOrchestrator {
         proposedPlan,
         policyDecision,
         execution,
+        outcome,
         pipelineStatus,
         completedAt,
       };
@@ -181,6 +197,14 @@ export class RecoveryPipelineOrchestrator {
         referenceTime: refTime,
       });
 
+      const outcome = await this.attributionService.evaluateAndRecord({
+        instrument,
+        healthSnapshot,
+        proposedPlan,
+        execution,
+        referenceTime: refTime,
+      });
+
       return {
         instrumentId,
         subscriptionId: instrument.subscription_id,
@@ -188,6 +212,7 @@ export class RecoveryPipelineOrchestrator {
         proposedPlan,
         policyDecision,
         execution,
+        outcome,
         pipelineStatus: 'no_op',
         completedAt,
       };
@@ -224,6 +249,15 @@ export class RecoveryPipelineOrchestrator {
         referenceTime: refTime,
       });
 
+      const outcome = await this.attributionService.evaluateAndRecord({
+        instrument,
+        healthSnapshot,
+        proposedPlan,
+        execution,
+        verification: verifyLogRes.verification,
+        referenceTime: refTime,
+      });
+
       return {
         instrumentId,
         subscriptionId: instrument.subscription_id,
@@ -232,6 +266,7 @@ export class RecoveryPipelineOrchestrator {
         policyDecision,
         verification: verifyLogRes.verification,
         execution,
+        outcome,
         pipelineStatus: 'blocked_by_verification',
         completedAt,
       };
@@ -250,6 +285,15 @@ export class RecoveryPipelineOrchestrator {
     const pipelineStatus: PipelineStatus =
       policyDecision.finalAction === 'escalate' ? 'escalated' : 'executed';
 
+    const outcome = await this.attributionService.evaluateAndRecord({
+      instrument,
+      healthSnapshot,
+      proposedPlan,
+      execution,
+      verification: verificationRecord,
+      referenceTime: refTime,
+    });
+
     return {
       instrumentId,
       subscriptionId: instrument.subscription_id,
@@ -258,6 +302,7 @@ export class RecoveryPipelineOrchestrator {
       policyDecision,
       verification: verificationRecord,
       execution,
+      outcome,
       pipelineStatus,
       completedAt,
     };
@@ -334,6 +379,7 @@ export class RecoveryPipelineOrchestrator {
     }
 
     const wallClockMs = Date.now() - startTime;
+    const scorecard = await this.attributionService.getScorecard();
 
     return {
       totalProcessed: instrumentIds.length,
@@ -344,6 +390,7 @@ export class RecoveryPipelineOrchestrator {
       blockedByCircuitBreakerCount,
       blockedByVerificationCount,
       noOpCount,
+      scorecard,
       wallClockMs,
       completedAt: new Date().toISOString(),
     };
@@ -363,5 +410,9 @@ export class RecoveryPipelineOrchestrator {
 
   getEscalationService(): EscalationService {
     return this.escalationService;
+  }
+
+  getAttributionService(): AttributionService {
+    return this.attributionService;
   }
 }
