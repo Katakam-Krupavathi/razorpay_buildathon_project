@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { PolicyContext } from '../src/policy/types.js';
-import { decide, DEFAULT_POLICY_CONFIG } from '../src/policy/engine.js';
+import { decide } from '../src/policy/engine.js';
 import { PolicyService } from '../src/policy/policy-service.js';
 import { EventStore } from '../src/event-store/event-store.js';
-import { createTestDatabase, type TestPool } from './test-db.js';
+import { createTestDatabase } from './test-db.js';
 
 describe('Deterministic Policy Engine ("PERMIT") Unit Tests', () => {
   const REF_TIME = '2026-08-30T12:00:00.000Z';

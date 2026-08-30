@@ -461,6 +461,38 @@ export interface PolicyEvaluation {
 
 export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
+export interface CircuitBreakerStatus {
+  cohortKey: string;
+  state: CircuitBreakerState;
+  totalAttemptsInWindow: number;
+  failedAttemptsInWindow: number;
+  successAttemptsInWindow: number;
+  currentSuccessRate: number; // 0.00 to 1.00
+  failureRate: number; // 0.00 to 1.00
+  trippedAt: string | null;
+  cooldownUntil: string | null;
+  openReason: string | null;
+  lastOutcomeAt: string | null;
+}
+
+export interface CircuitBreakerTrippedPayload {
+  cohortKey: string;
+  trippedAt: string;
+  successRate: number;
+  threshold: number;
+  windowSize: number;
+  totalSamples: number;
+  reason: string;
+}
+
+export interface CircuitBreakerResetPayload {
+  cohortKey: string;
+  resetBy: string;
+  resetAt: string;
+  reason: string;
+  previousState: CircuitBreakerState;
+}
+
 export interface CircuitBreakerMetrics {
   totalAttemptsInWindow: number;
   failedAttemptsInWindow: number;
