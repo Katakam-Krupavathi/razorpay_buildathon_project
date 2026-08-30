@@ -13,6 +13,10 @@ export * from './razorpay/client.js';
 export * from './razorpay/webhook-verifier.js';
 export * from './razorpay/webhook-processor.js';
 export * from './routes/webhook.js';
+export * from './risk/scorer.js';
+export * from './risk/erv-config.js';
+export * from './risk/erv-engine.js';
+export * from './risk/health-service.js';
 
 dotenv.config();
 
