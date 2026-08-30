@@ -1,7 +1,4 @@
-import type {
-  DbEscalationRecord,
-  EscalationStatus,
-} from '@recovery/shared';
+import type { DbEscalationRecord, EscalationStatus } from '@recovery/shared';
 
 export interface CreateEscalationParams {
   instrumentId: string;

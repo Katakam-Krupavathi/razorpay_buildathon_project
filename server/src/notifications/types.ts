@@ -1,7 +1,4 @@
-import type {
-  NotificationChannel,
-  NotificationDeliveryResult,
-} from '@recovery/shared';
+import type { NotificationChannel, NotificationDeliveryResult } from '@recovery/shared';
 
 export interface NotificationMessage {
   recipient: string;

@@ -3,11 +3,7 @@ import pg from 'pg';
 import type { DbEscalationRecord } from '@recovery/shared';
 import { EventStore } from '../event-store/event-store.js';
 import { getPool } from '../db/connection.js';
-import type {
-  CreateEscalationParams,
-  EscalationFilter,
-  ResolveEscalationParams,
-} from './types.js';
+import type { CreateEscalationParams, EscalationFilter, ResolveEscalationParams } from './types.js';
 
 export class EscalationService {
   private pool: pg.Pool;
@@ -87,8 +83,7 @@ export class EscalationService {
       values.push(filter.instrumentId);
     }
 
-    const whereClause =
-      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limit = filter?.limit || 100;
     const offset = filter?.offset || 0;
 
@@ -129,13 +124,7 @@ export class EscalationService {
       RETURNING *;
     `;
 
-    const values = [
-      status,
-      now,
-      params.resolvedBy,
-      params.resolutionNotes,
-      params.escalationId,
-    ];
+    const values = [status, now, params.resolvedBy, params.resolutionNotes, params.escalationId];
 
     const result = await this.pool.query<DbEscalationRecord>(updateSql, values);
     if (result.rows.length === 0) {

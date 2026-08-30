@@ -22,6 +22,7 @@
     "risk:analyze": "npm run risk:analyze -w @recovery/scripts",
     "planner:batch": "npm run planner:batch -w @recovery/scripts",
     "policy:batch": "npm run policy:batch -w @recovery/scripts",
+    "pipeline:batch": "npm run pipeline:batch -w @recovery/scripts",
     "cb:simulate": "npm run cb:simulate -w @recovery/scripts",
     "demo:stale-cache": "npm run demo:stale-cache -w @recovery/scripts",
     "razorpay:seed-test-data": "npm run razorpay:seed-test-data -w @recovery/scripts",

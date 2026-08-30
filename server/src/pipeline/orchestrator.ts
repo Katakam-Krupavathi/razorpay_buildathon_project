@@ -60,28 +60,20 @@ export class RecoveryPipelineOrchestrator {
     this.healthService =
       dependencies?.healthService || new HealthService(this.eventStore, this.pool);
     this.plannerService =
-      dependencies?.plannerService ||
-      new RecoveryPlannerService(this.eventStore, this.pool);
+      dependencies?.plannerService || new RecoveryPlannerService(this.eventStore, this.pool);
     this.policyService =
-      dependencies?.policyService ||
-      new PolicyService(this.eventStore, this.pool);
-    this.circuitBreaker =
-      dependencies?.circuitBreaker || new CohortCircuitBreaker(this.eventStore);
-    this.circuitBreakerGuard = new CircuitBreakerGuard(
-      this.circuitBreaker,
-      this.eventStore,
-    );
+      dependencies?.policyService || new PolicyService(this.eventStore, this.pool);
+    this.circuitBreaker = dependencies?.circuitBreaker || new CohortCircuitBreaker(this.eventStore);
+    this.circuitBreakerGuard = new CircuitBreakerGuard(this.circuitBreaker, this.eventStore);
     this.verificationGateway =
-      dependencies?.verificationGateway ||
-      new VerificationGateway(undefined, this.circuitBreaker);
+      dependencies?.verificationGateway || new VerificationGateway(undefined, this.circuitBreaker);
     this.verificationService = new VerificationService(
       this.verificationGateway,
       this.eventStore,
       this.pool,
     );
     this.escalationService =
-      dependencies?.escalationService ||
-      new EscalationService(this.pool, this.eventStore);
+      dependencies?.escalationService || new EscalationService(this.pool, this.eventStore);
     this.executionService =
       dependencies?.executionService ||
       new ExecutionService(
@@ -100,9 +92,7 @@ export class RecoveryPipelineOrchestrator {
     instrumentId: string,
     options?: PipelineProcessOptions,
   ): Promise<PipelineInstrumentResult> {
-    const refTime = options?.referenceTime
-      ? new Date(options.referenceTime)
-      : new Date();
+    const refTime = options?.referenceTime ? new Date(options.referenceTime) : new Date();
     const completedAt = refTime.toISOString();
 
     // 0. Load instrument from database
@@ -117,17 +107,15 @@ export class RecoveryPipelineOrchestrator {
     const instrument = instResult.rows[0];
 
     // [Stage 1] Risk Intelligence Layer Evaluation
-    const healthServiceResult = await this.healthService.evaluateAndPersist(
-      instrumentId,
-      { referenceTime: refTime },
-    );
+    const healthServiceResult = await this.healthService.evaluateAndPersist(instrumentId, {
+      referenceTime: refTime,
+    });
     const healthSnapshot = healthServiceResult.health;
 
     // [Stage 2] AI Recovery Planner Proposal
-    const planResult = await this.plannerService.planAndLog(
-      instrumentId,
-      { referenceTime: refTime },
-    );
+    const planResult = await this.plannerService.planAndLog(instrumentId, {
+      referenceTime: refTime,
+    });
     const proposedPlan = planResult.proposal;
 
     // [Stage 3] Deterministic Policy Engine ("PERMIT")
@@ -259,6 +247,9 @@ export class RecoveryPipelineOrchestrator {
       referenceTime: refTime,
     });
 
+    const pipelineStatus: PipelineStatus =
+      policyDecision.finalAction === 'escalate' ? 'escalated' : 'executed';
+
     return {
       instrumentId,
       subscriptionId: instrument.subscription_id,
@@ -267,7 +258,7 @@ export class RecoveryPipelineOrchestrator {
       policyDecision,
       verification: verificationRecord,
       execution,
-      pipelineStatus: 'executed',
+      pipelineStatus,
       completedAt,
     };
   }
@@ -280,11 +271,13 @@ export class RecoveryPipelineOrchestrator {
     const limit = options?.limit || 1000;
     const offset = options?.offset || 0;
 
-    let querySql = 'SELECT instrument_id FROM instruments ORDER BY created_at ASC LIMIT $1 OFFSET $2;';
+    let querySql =
+      'SELECT instrument_id FROM instruments ORDER BY created_at ASC LIMIT $1 OFFSET $2;';
     const values: unknown[] = [limit, offset];
 
     if (options?.railFilter) {
-      querySql = 'SELECT instrument_id FROM instruments WHERE rail = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3;';
+      querySql =
+        'SELECT instrument_id FROM instruments WHERE rail = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3;';
       values.unshift(options.railFilter);
     }
 
@@ -312,8 +305,7 @@ export class RecoveryPipelineOrchestrator {
       });
 
       if (res.execution?.action) {
-        byActionType[res.execution.action] =
-          (byActionType[res.execution.action] || 0) + 1;
+        byActionType[res.execution.action] = (byActionType[res.execution.action] || 0) + 1;
       }
 
       switch (res.pipelineStatus) {

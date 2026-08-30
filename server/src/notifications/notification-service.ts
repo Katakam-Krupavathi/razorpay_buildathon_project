@@ -1,8 +1,5 @@
 import crypto from 'node:crypto';
-import type {
-  NotificationChannel,
-  NotificationDeliveryResult,
-} from '@recovery/shared';
+import type { NotificationChannel, NotificationDeliveryResult } from '@recovery/shared';
 import type { NotificationMessage, NotificationProvider } from './types.js';
 
 /**
@@ -62,8 +59,7 @@ export class NotificationService {
     const channel = options.channel || 'email';
     const recipient = options.recipient || 'subscriber@example.com';
     const template = options.template || 'PROACTIVE_CARD_EXPIRY_NUDGE';
-    const subject =
-      options.subject || 'Action Required: Update your subscription payment method';
+    const subject = options.subject || 'Action Required: Update your subscription payment method';
 
     return this.provider.send({
       recipient,

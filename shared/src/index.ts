@@ -589,13 +589,7 @@ export interface NotificationDeliveryResult {
 // ============================================================================
 
 export type ExecutionStatus =
-  | 'executed'
-  | 'scheduled'
-  | 'paused'
-  | 'nudged'
-  | 'escalated'
-  | 'no_op'
-  | 'failed';
+  'executed' | 'scheduled' | 'paused' | 'nudged' | 'escalated' | 'no_op' | 'failed';
 
 export interface ExecutionActionResult {
   actionId: string;
