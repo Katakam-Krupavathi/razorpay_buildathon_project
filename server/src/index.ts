@@ -29,10 +29,7 @@ export * from './circuit-breaker/circuit-breaker.js';
 export * from './circuit-breaker/circuit-breaker-guard.js';
 export * from './routes/circuit-breaker.js';
 
-import {
-  circuitBreakerRoutes,
-  CircuitBreakerRouteOptions,
-} from './routes/circuit-breaker.js';
+import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
 
 dotenv.config();
@@ -57,8 +54,7 @@ export async function buildApp(opts?: AppOptions) {
   await app.register(cors, { origin: true });
 
   // Initialize shared Circuit Breaker
-  const circuitBreaker =
-    opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
+  const circuitBreaker = opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
 
   // Register Webhook Ingestion Routes
   await app.register(webhookRoutes, opts?.webhookOptions || {});

@@ -14,6 +14,7 @@
     "risk:analyze": "tsx src/run-risk-analysis.ts",
     "planner:batch": "tsx src/run-planner-batch.ts",
     "policy:batch": "tsx src/run-policy-batch.ts",
+    "cb:simulate": "tsx src/simulate-circuit-breaker.ts",
     "razorpay:seed-test-data": "tsx src/create-test-data.ts",
     "test": "vitest run"
   },

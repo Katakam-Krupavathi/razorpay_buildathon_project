@@ -1,7 +1,4 @@
-import type {
-  PolicyDecisionRecord,
-  StoredEvent,
-} from '@recovery/shared';
+import type { PolicyDecisionRecord, StoredEvent } from '@recovery/shared';
 import { CohortCircuitBreaker } from './circuit-breaker.js';
 import { EventStore } from '../event-store/event-store.js';
 
@@ -68,7 +65,9 @@ export class CircuitBreakerGuard {
         ...decision,
         result: 'BLOCK',
         finalAction: 'escalate',
-        reason: evaluation.overrideReason || `Circuit breaker is OPEN for cohort '${cohortKey}'. Automated execution intercepted; converted to manual escalation.`,
+        reason:
+          evaluation.overrideReason ||
+          `Circuit breaker is OPEN for cohort '${cohortKey}'. Automated execution intercepted; converted to manual escalation.`,
         ruleIdMatched: 'CIRCUIT-BREAKER-OPEN-001',
         evaluatedAt: nowIso,
         parameters: {

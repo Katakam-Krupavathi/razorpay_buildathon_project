@@ -21,7 +21,7 @@ describe('Cohort-Level Rolling-Window Circuit Breaker Tests', () => {
     circuitBreaker = new CohortCircuitBreaker(eventStore, {
       windowSize: 20,
       minSamples: 10,
-      minSuccessRateThreshold: 0.40, // 40%
+      minSuccessRateThreshold: 0.4, // 40%
       cooldownPeriodSeconds: 60, // 60s for testing
     });
     guard = new CircuitBreakerGuard(circuitBreaker, eventStore);

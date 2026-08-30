@@ -11,7 +11,7 @@ import { EventStore } from '../event-store/event-store.js';
 export const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
   windowSize: 20,
   minSamples: 10,
-  minSuccessRateThreshold: 0.40, // 40% success rate threshold
+  minSuccessRateThreshold: 0.4, // 40% success rate threshold
   cooldownPeriodSeconds: 300, // 5 minutes cooldown
 };
 
