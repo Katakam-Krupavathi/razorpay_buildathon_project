@@ -38,6 +38,8 @@ export * from './escalation/escalation-service.js';
 export * from './execution/types.js';
 export * from './execution/execution-service.js';
 export * from './routes/escalations.js';
+export * from './pipeline/types.js';
+export * from './pipeline/orchestrator.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { devHookRoutes } from './routes/dev-hooks.js';
