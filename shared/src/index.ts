@@ -831,3 +831,73 @@ export interface ControlPlaneHealth {
   version: string;
   timestamp: string;
 }
+
+// ============================================================================
+// Phase 12: Revenue Command Center Dashboard & Opportunity Queue Types
+// ============================================================================
+
+export interface OpportunityQueueItem {
+  instrumentId: string;
+  subscriptionId: string;
+  rail: InstrumentRail;
+  monthlyAmountPaise: number;
+  annualizedValuePaise: number;
+  healthScore: number;
+  trajectory: TrajectoryType;
+  rootCause: RootCauseType;
+  amountAtRiskPaise: number;
+  expectedRecoveryValuePaise: number;
+  recoveryProbability: number;
+  recommendedAction: PlannerActionType;
+  ltvTier: string;
+  mandateStatus: MandateStatusEnum;
+  evaluatedAt: string;
+}
+
+export interface SparklineDataPoint {
+  timestamp: string;
+  score: number;
+}
+
+export interface InstrumentListItem {
+  instrumentId: string;
+  subscriptionId: string;
+  customerId: string;
+  rail: InstrumentRail;
+  mandateStatus: MandateStatusEnum;
+  subscriptionStatus: SubscriptionStatusEnum;
+  monthlyAmountPaise: number;
+  annualizedValuePaise: number;
+  ltvTier: string;
+  healthScore: number;
+  trajectory: TrajectoryType;
+  rootCause: RootCauseType;
+  failureCount: number;
+  daysToExpiry: number | null;
+  lastSyncedAt: string;
+  sparkline: SparklineDataPoint[];
+}
+
+export interface PipelineRunResponse {
+  success: boolean;
+  message: string;
+  summary: {
+    totalInstruments: number;
+    processedCount: number;
+    actionsTaken: {
+      retried: number;
+      scheduledRetry: number;
+      proactiveNudge: number;
+      paused: number;
+      escalated: number;
+      noAction: number;
+    };
+    blockedByPolicy: number;
+    blockedByCircuitBreaker: number;
+    blockedByStaleState: number;
+    totalAmountAtRiskPaise: number;
+    totalExpectedRecoveryValuePaise: number;
+    executionDurationMs: number;
+  };
+}
+
