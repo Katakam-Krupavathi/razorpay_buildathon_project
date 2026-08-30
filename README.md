@@ -80,66 +80,76 @@ The system is engineered in 14 modular, strictly verified phases:
 
 ---
 
-## 🚀 Quickstart & Local Setup
+## 🚀 One-Command Quickstart & Demo
+
+For evaluators and judges to launch the complete system cold with zero manual setup:
+
+```bash
+# 1. Start local PostgreSQL & Redis containers
+docker compose up -d
+
+# 2. Run one-command demo bootstrap (resets DB, seeds synthetic batch, runs recovery pipeline, starts API & UI)
+make demo
+# OR: npm run demo
+```
+
+- **Web Command Center Dashboard**: [http://localhost:5173](http://localhost:5173)
+- **Fastify Control Plane API**: [http://localhost:4000](http://localhost:4000) (Health: [http://localhost:4000/health](http://localhost:4000/health))
+- **Live Demo Script & Pitch Walkthrough**: See [`docs/DEMO_SCRIPT.md`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/docs/DEMO_SCRIPT.md)
+- **Evaluation Criteria Traceability Matrix**: See [`docs/EVALUATION_MAPPING.md`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/docs/EVALUATION_MAPPING.md)
+
+---
+
+## 🛠️ Step-by-Step Manual Setup
 
 ### Prerequisites
-
-- **Node.js**: `v20.0.0` or higher
+- **Node.js**: `v20.0.0` or higher (Node 22 LTS recommended)
 - **npm**: `v10.0.0` or higher
 - **Docker & Docker Compose**: Installed and running
 
-### 1. Clone & Install Dependencies
-
+### 1. Install Dependencies & Configure Environment
 ```bash
 git clone https://github.com/Katakam-Krupavathi/razorpay_buildathon_project.git
 cd razorpay_buildathon_project
 npm install
-```
-
-### 2. Environment Configuration
-
-Copy the example environment file and configure secrets as needed:
-
-```bash
 cp .env.example .env
 ```
 
-### 3. Start Database & Redis Infrastructure
-
+### 2. Database Migrations & Synthetic Data Seeding
 ```bash
 docker compose up -d
+
+# Reset database & apply schema
+npm run db:reset
+
+# Seed deterministic 100-subscription synthetic dataset (seed=42)
+npm run seed:synthetic
+
+# Execute autonomous recovery pipeline batch across dataset
+npm run pipeline:batch
+
+# Run regulatory compliance audit query engine
+npm run audit:compliance
 ```
 
-### 4. Run Development Servers
-
-Start both the Fastify backend server and React Vite dashboard concurrently:
-
+### 3. Start Development Servers
 ```bash
 npm run dev
 ```
 
-- **Backend Server**: [http://localhost:4000](http://localhost:4000) (Health: [http://localhost:4000/health](http://localhost:4000/health))
-- **Web Dashboard**: [http://localhost:5173](http://localhost:5173)
-
 ---
 
-## 🧪 Testing, Linting & Build
+## 🧪 Comprehensive Automated Testing & Quality Pass
 
 ```bash
-# Run linting across all workspace packages
-npm run lint
-
-# Format code with Prettier
-npm run format
-
-# Run test suites across all packages
+# Run unit, component, and end-to-end integration tests across all 4 workspaces
 npm test
 
-# Build all packages with TypeScript
-npm run build
+# Run strict ESLint checks across entire repository (zero errors, zero warnings)
+npm run lint
 
-# Validate Docker Compose configuration
-docker compose config
+# Compile all TypeScript workspaces and build production Vite web bundle
+npm run build
 ```
 
 ---
