@@ -18,6 +18,9 @@ export * from './risk/erv-config.js';
 export * from './risk/erv-engine.js';
 export * from './risk/health-service.js';
 export * from './risk/batch-runner.js';
+export * from './planner/types.js';
+export * from './planner/planner.js';
+export * from './planner/planner-service.js';
 
 dotenv.config();
 
