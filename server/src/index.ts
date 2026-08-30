@@ -31,14 +31,24 @@ export * from './verification/types.js';
 export * from './verification/gateway.js';
 export * from './verification/verification-service.js';
 export * from './routes/dev-hooks.js';
+export * from './notifications/types.js';
+export * from './notifications/notification-service.js';
+export * from './escalation/types.js';
+export * from './escalation/escalation-service.js';
+export * from './execution/types.js';
+export * from './execution/execution-service.js';
+export * from './routes/escalations.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { devHookRoutes } from './routes/dev-hooks.js';
+import { escalationRoutes, EscalationRouteOptions } from './routes/escalations.js';
 import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
+import { EscalationService } from './escalation/escalation-service.js';
 
 export interface AppOptions extends FastifyServerOptions {
   webhookOptions?: WebhookRouteOptions;
   circuitBreakerOptions?: CircuitBreakerRouteOptions;
+  escalationOptions?: EscalationRouteOptions;
 }
 
 export async function buildApp(opts?: AppOptions) {
@@ -52,8 +62,9 @@ export async function buildApp(opts?: AppOptions) {
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: true });
 
-  // Initialize shared Circuit Breaker
+  // Initialize shared Circuit Breaker and Escalation Service
   const circuitBreaker = opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
+  const escalationService = opts?.escalationOptions?.escalationService || new EscalationService();
 
   // Register Webhook Ingestion Routes
   await app.register(webhookRoutes, opts?.webhookOptions || {});
@@ -63,6 +74,9 @@ export async function buildApp(opts?: AppOptions) {
 
   // Register Dev Simulation Hooks Routes
   await app.register(devHookRoutes);
+
+  // Register Escalation Workflow Routes
+  await app.register(escalationRoutes, { escalationService });
 
   // Root & Health Check Endpoints
   app.get('/', async () => {
