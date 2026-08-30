@@ -104,6 +104,46 @@ export class AttributionService {
   }
 
   /**
+   * Lists recovery outcome records with optional filters.
+   */
+  async listOutcomes(filter?: {
+    recoveryType?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<DbRecoveryOutcome[]> {
+    const conditions: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
+
+    if (filter?.recoveryType) {
+      conditions.push(`recovery_type = $${paramIndex++}`);
+      values.push(filter.recoveryType);
+    }
+
+    if (filter?.status) {
+      conditions.push(`status = $${paramIndex++}`);
+      values.push(filter.status);
+    }
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const limit = filter?.limit || 100;
+    const offset = filter?.offset || 0;
+
+    const sql = `
+      SELECT * FROM recovery_outcomes
+      ${whereClause}
+      ORDER BY closed_at DESC
+      LIMIT $${paramIndex++} OFFSET $${paramIndex++};
+    `;
+
+    values.push(limit, offset);
+    const res = await this.pool.query<DbRecoveryOutcome>(sql, values);
+    return res.rows;
+  }
+
+  /**
    * Evaluates counterfactuals and records recovery outcome in a single step.
    */
   async evaluateAndRecord(input: OutcomeEvaluationInput): Promise<DbRecoveryOutcome> {

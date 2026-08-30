@@ -29,39 +29,20 @@ export const attributionRoutes: FastifyPluginAsync<AttributionRouteOptions> = as
       recoveryType?: string;
       status?: string;
       limit?: string;
+      offset?: string;
     };
 
-    const conditions: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
-
-    if (query.recoveryType) {
-      conditions.push(`recovery_type = $${paramIndex++}`);
-      values.push(query.recoveryType);
-    }
-
-    if (query.status) {
-      conditions.push(`status = $${paramIndex++}`);
-      values.push(query.status);
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const limit = query.limit ? parseInt(query.limit, 10) : 100;
-    values.push(limit);
-
-    const sql = `
-      SELECT * FROM recovery_outcomes
-      ${whereClause}
-      ORDER BY closed_at DESC
-      LIMIT $${paramIndex++};
-    `;
-
-    const res = await pool.query<DbRecoveryOutcome>(sql, values);
+    const outcomes = await attributionService.listOutcomes({
+      recoveryType: query.recoveryType,
+      status: query.status,
+      limit: query.limit ? parseInt(query.limit, 10) : 100,
+      offset: query.offset ? parseInt(query.offset, 10) : 0,
+    });
 
     return reply.send({
       success: true,
-      count: res.rows.length,
-      data: res.rows,
+      count: outcomes.length,
+      data: outcomes,
     });
   });
 };
