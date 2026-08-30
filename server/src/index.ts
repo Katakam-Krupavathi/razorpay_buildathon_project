@@ -43,20 +43,28 @@ export * from './attribution/types.js';
 export * from './attribution/counterfactual-engine.js';
 export * from './attribution/attribution-service.js';
 export * from './routes/attribution.js';
+export * from './audit/types.js';
+export * from './audit/decision-trace-service.js';
+export * from './audit/compliance-service.js';
+export * from './routes/audit.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { devHookRoutes } from './routes/dev-hooks.js';
 import { escalationRoutes, EscalationRouteOptions } from './routes/escalations.js';
 import { attributionRoutes, AttributionRouteOptions } from './routes/attribution.js';
+import { auditRoutes, AuditRouteOptions } from './routes/audit.js';
 import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
 import { EscalationService } from './escalation/escalation-service.js';
 import { AttributionService } from './attribution/attribution-service.js';
+import { DecisionTraceService } from './audit/decision-trace-service.js';
+import { ComplianceService } from './audit/compliance-service.js';
 
 export interface AppOptions extends FastifyServerOptions {
   webhookOptions?: WebhookRouteOptions;
   circuitBreakerOptions?: CircuitBreakerRouteOptions;
   escalationOptions?: EscalationRouteOptions;
   attributionOptions?: AttributionRouteOptions;
+  auditOptions?: AuditRouteOptions;
 }
 
 export async function buildApp(opts?: AppOptions) {
@@ -74,6 +82,8 @@ export async function buildApp(opts?: AppOptions) {
   const circuitBreaker = opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
   const escalationService = opts?.escalationOptions?.escalationService || new EscalationService();
   const attributionService = opts?.attributionOptions?.attributionService || new AttributionService();
+  const decisionTraceService = opts?.auditOptions?.decisionTraceService || new DecisionTraceService();
+  const complianceService = opts?.auditOptions?.complianceService || new ComplianceService();
 
   // Register Webhook Ingestion Routes
   await app.register(webhookRoutes, opts?.webhookOptions || {});
@@ -89,6 +99,9 @@ export async function buildApp(opts?: AppOptions) {
 
   // Register Attribution & Scorecard Routes
   await app.register(attributionRoutes, { attributionService });
+
+  // Register Decision Trace & Compliance Audit Routes
+  await app.register(auditRoutes, { decisionTraceService, complianceService });
 
   // Root & Health Check Endpoints
   app.get('/', async () => {
