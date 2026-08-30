@@ -1,7 +1,137 @@
 /**
  * Autonomous Revenue Recovery Control Plane - Shared Domain Types & Contracts
- * Phase 0: Base Scaffolding & Shared Data Models
+ * Phase 1: Core Relational Data Model & Hash-Chained Event Store Schemas
  */
+
+// ============================================================================
+// Core Database Enums & Entity Models
+// ============================================================================
+
+export type InstrumentRail = 'card' | 'upi_autopay' | 'enach';
+
+export type MandateStatusEnum = 'active' | 'paused' | 'revoked' | 'expired';
+
+export interface DbInstrument {
+  instrument_id: string;
+  subscription_id: string;
+  rail: InstrumentRail;
+  created_at: string;
+  expiry_date: string | null;
+  mandate_status: MandateStatusEnum;
+  last_synced_at: string;
+  ltv_tier: string;
+  annualized_value: number; // in minor units (paise)
+}
+
+export type SubscriptionStatusEnum =
+  | 'authenticated'
+  | 'activated'
+  | 'active'
+  | 'pending'
+  | 'halted'
+  | 'paused'
+  | 'resumed'
+  | 'completed'
+  | 'cancelled';
+
+export interface DbSubscription {
+  subscription_id: string;
+  customer_id: string;
+  plan_id: string;
+  status: SubscriptionStatusEnum;
+  current_instrument_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type EventActor =
+  | 'razorpay_webhook'
+  | 'health_scorer'
+  | 'recovery_planner'
+  | 'policy_engine'
+  | 'circuit_breaker'
+  | 'verification_gateway'
+  | 'execution_engine'
+  | 'human';
+
+export interface DbEvent<T = Record<string, unknown>> {
+  event_id: string;
+  sequence_number: number;
+  prev_hash: string;
+  hash: string;
+  subscription_id: string | null;
+  instrument_id: string | null;
+  event_type: string;
+  payload: T;
+  actor: EventActor;
+  created_at: string;
+}
+
+export interface DbHealthSnapshot {
+  snapshot_id: string;
+  subscription_id: string;
+  risk_score: number;
+  failure_category: string;
+  churn_probability: number;
+  computed_at: string;
+}
+
+export interface DbPolicyDecision {
+  decision_id: string;
+  subscription_id: string;
+  decision: string;
+  target_action: string;
+  evaluated_rules: unknown;
+  evaluated_at: string;
+}
+
+export interface DbRecoveryOutcome {
+  outcome_id: string;
+  invoice_id: string;
+  subscription_id: string;
+  recovered_amount: number;
+  cost_incurred: number;
+  net_value_recovered: number;
+  status: string;
+  completed_at: string;
+}
+
+// ============================================================================
+// Hash-Chained Event Store Contracts
+// ============================================================================
+
+export const GENESIS_PREV_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
+
+export interface CreateEventInput<T = Record<string, unknown>> {
+  eventId?: string;
+  subscriptionId?: string | null;
+  instrumentId?: string | null;
+  eventType: string;
+  payload: T;
+  actor: EventActor;
+  createdAt?: string | Date;
+}
+
+export interface StoredEvent<T = Record<string, unknown>> {
+  eventId: string;
+  sequenceNumber: number;
+  prevHash: string;
+  hash: string;
+  subscriptionId: string | null;
+  instrumentId: string | null;
+  eventType: string;
+  payload: T;
+  actor: EventActor;
+  createdAt: string;
+}
+
+export interface ChainIntegrityResult {
+  valid: boolean;
+  verifiedCount: number;
+  errors: string[];
+  tipHash: string | null;
+  tipSequenceNumber: number;
+}
 
 // ============================================================================
 // Mandate & Razorpay Subscription Types
@@ -55,7 +185,7 @@ export type RecoveryEventType =
 export interface RecoveryEvent<T = Record<string, unknown>> {
   id: string;
   eventType: RecoveryEventType;
-  aggregateId: string; // e.g., invoiceId or subscriptionId
+  aggregateId: string;
   aggregateType: 'invoice' | 'subscription' | 'customer' | 'mandate';
   version: number;
   payload: T;
@@ -102,8 +232,8 @@ export interface ERVComputation {
   invoiceAmount: number; // in paise
   customerLifetimeValue: number; // in paise
   historicalRecoveryProbability: number; // 0.00 to 1.00
-  churnPropensityScore: number; // 0.00 to 1.00 (higher = higher risk of churn on friction)
-  interventionCost: number; // cost of sending SMS/WhatsApp/retry attempt
+  churnPropensityScore: number; // 0.00 to 1.00
+  interventionCost: number;
   expectedRecoveryValue: number; // (Probability * Amount) - Cost
   shouldIntervene: boolean;
   computedAt: string;

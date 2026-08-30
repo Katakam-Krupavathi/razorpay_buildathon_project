@@ -15,6 +15,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "npm run test --workspaces --if-present",
+    "db:migrate": "npm run db:migrate -w @recovery/scripts",
+    "db:reset": "npm run db:reset -w @recovery/scripts",
+    "db:seed": "npm run db:seed -w @recovery/scripts",
     "dev": "concurrently -n \"server,web\" -c \"blue,green\" \"npm run dev -w @recovery/server\" \"npm run dev -w @recovery/web\"",
     "clean": "rimraf dist build **/dist **/build **/node_modules"
   },

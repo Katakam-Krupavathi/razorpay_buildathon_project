@@ -4,6 +4,11 @@ import helmet from '@fastify/helmet';
 import dotenv from 'dotenv';
 import type { ControlPlaneHealth } from '@recovery/shared';
 
+export * from './db/connection.js';
+export * from './db/migrator.js';
+export * from './event-store/hasher.js';
+export * from './event-store/event-store.js';
+
 dotenv.config();
 
 const port = Number(process.env.PORT) || 4000;
