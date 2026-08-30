@@ -7,9 +7,9 @@ import {
   EventStore,
   getPool,
   closePool,
-  type DbInstrument,
   type PolicyDecisionRecord,
 } from '@recovery/server';
+import type { DbInstrument } from '@recovery/shared';
 
 dotenv.config();
 
