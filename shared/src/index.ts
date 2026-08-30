@@ -158,6 +158,78 @@ export interface RazorpayMandate {
   updatedAt: string;
 }
 
+export type RazorpayWebhookEvent =
+  | 'subscription.charged'
+  | 'subscription.pending'
+  | 'subscription.halted'
+  | 'subscription.activated'
+  | 'subscription.updated'
+  | 'subscription.paused'
+  | 'subscription.resumed'
+  | 'subscription.cancelled'
+  | 'subscription.completed';
+
+export interface RazorpaySubscriptionEntity {
+  id: string;
+  plan_id: string;
+  customer_id?: string;
+  status: string;
+  current_start?: number | null;
+  current_end?: number | null;
+  ended_at?: number | null;
+  quantity?: number;
+  notes?: Record<string, unknown>;
+  charge_at?: number | null;
+  start_at?: number | null;
+  end_at?: number | null;
+  total_count?: number;
+  paid_count?: number;
+  customer_notify?: boolean;
+  created_at?: number;
+  token_id?: string | null;
+}
+
+export interface RazorpayPaymentEntity {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  order_id?: string | null;
+  invoice_id?: string | null;
+  subscription_id?: string | null;
+  method?: string;
+  amount_refunded?: number;
+  refund_status?: string | null;
+  captured?: boolean;
+  description?: string | null;
+  card_id?: string | null;
+  bank?: string | null;
+  wallet?: string | null;
+  vpa?: string | null;
+  email?: string;
+  contact?: string;
+  token_id?: string | null;
+  error_code?: string | null;
+  error_description?: string | null;
+  error_source?: string | null;
+  error_step?: string | null;
+  error_reason?: string | null;
+}
+
+export interface RazorpayWebhookPayload {
+  entity: 'event';
+  account_id: string;
+  event: RazorpayWebhookEvent;
+  contains: string[];
+  payload: {
+    subscription?: { entity: RazorpaySubscriptionEntity };
+    payment?: { entity: RazorpayPaymentEntity };
+    invoice?: { entity: Record<string, unknown> };
+    order?: { entity: Record<string, unknown> };
+  };
+  created_at: number;
+}
+
 // ============================================================================
 // Event Store & Recovery Event Lifecycle
 // ============================================================================
