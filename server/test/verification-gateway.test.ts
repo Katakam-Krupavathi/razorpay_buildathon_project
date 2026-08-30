@@ -110,7 +110,9 @@ describe('Safety & Verification Gateway ("2 AM" Pre-Action Guard) Tests', () => 
 
       const liveCheck = result.checks.find((c) => c.check === 'LIVE_STATE_CHECK');
       expect(liveCheck?.passed).toBe(false);
-      expect(liveCheck?.reason).toContain('Cached state (\'active\') disagrees with live gateway state (\'revoked\')');
+      expect(liveCheck?.reason).toContain(
+        "Cached state ('active') disagrees with live gateway state ('revoked')",
+      );
     });
 
     it('3. STALE STATE CHECK: should BLOCK when live mandate state is paused', async () => {
@@ -305,9 +307,9 @@ describe('Safety & Verification Gateway ("2 AM" Pre-Action Guard) Tests', () => 
       expect(simBody.simulatedState.mandateStatus).toBe('revoked');
 
       // Verify override is active in client
-      expect(
-        RazorpayClient.getSimulatedLiveOverride('inst_dev_demo_01')?.mandateStatus,
-      ).toBe('revoked');
+      expect(RazorpayClient.getSimulatedLiveOverride('inst_dev_demo_01')?.mandateStatus).toBe(
+        'revoked',
+      );
 
       // 2. Clear overrides
       const clearRes = await app.inject({

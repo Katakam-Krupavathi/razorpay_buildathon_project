@@ -15,6 +15,7 @@
     "planner:batch": "tsx src/run-planner-batch.ts",
     "policy:batch": "tsx src/run-policy-batch.ts",
     "cb:simulate": "tsx src/simulate-circuit-breaker.ts",
+    "demo:stale-cache": "tsx src/demo-stale-cache.ts",
     "razorpay:seed-test-data": "tsx src/create-test-data.ts",
     "test": "vitest run"
   },

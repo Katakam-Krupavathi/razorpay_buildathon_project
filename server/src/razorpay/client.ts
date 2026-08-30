@@ -211,36 +211,9 @@ export class RazorpayClient {
       };
     }
 
-    try {
-      return await this.request<RazorpaySubscriptionEntity>(`/subscriptions/${subscriptionId}`, {
-        method: 'GET',
-      });
-    } catch (err) {
-      if (
-        process.env.NODE_ENV === 'test' ||
-        process.env.VITEST ||
-        !this.config.keyId ||
-        this.config.keyId.includes('placeholder')
-      ) {
-        return {
-          id: subscriptionId,
-          plan_id: 'plan_simulated',
-          customer_id: 'cust_simulated',
-          status: 'active',
-          current_start: Math.floor(Date.now() / 1000),
-          current_end: Math.floor(Date.now() / 1000) + 30 * 86400,
-          ended_at: null,
-          quantity: 1,
-          charge_at: Math.floor(Date.now() / 1000),
-          start_at: Math.floor(Date.now() / 1000),
-          end_at: Math.floor(Date.now() / 1000) + 365 * 86400,
-          total_count: 12,
-          paid_count: 1,
-          created_at: Math.floor(Date.now() / 1000),
-        };
-      }
-      throw err;
-    }
+    return this.request<RazorpaySubscriptionEntity>(`/subscriptions/${subscriptionId}`, {
+      method: 'GET',
+    });
   }
 
   /**
@@ -273,29 +246,8 @@ export class RazorpayClient {
       ? `/customers/${customerId}/tokens/${tokenId}`
       : `/tokens/${tokenId}`;
 
-    try {
-      return await this.request<RazorpayTokenEntity | RazorpayMandate>(endpoint, {
-        method: 'GET',
-      });
-    } catch (err) {
-      if (
-        process.env.NODE_ENV === 'test' ||
-        process.env.VITEST ||
-        !this.config.keyId ||
-        this.config.keyId.includes('placeholder')
-      ) {
-        return {
-          id: tokenId,
-          entity: 'token',
-          token: `tok_sim_${tokenId}`,
-          method: 'card',
-          recurring: true,
-          auth_type: 'pin',
-          created_at: Math.floor(Date.now() / 1000),
-          status: 'active',
-        } as unknown as RazorpayTokenEntity;
-      }
-      throw err;
-    }
+    return this.request<RazorpayTokenEntity | RazorpayMandate>(endpoint, {
+      method: 'GET',
+    });
   }
 }

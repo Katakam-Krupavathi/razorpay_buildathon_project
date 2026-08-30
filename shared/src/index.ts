@@ -507,10 +507,7 @@ export interface CircuitBreakerMetrics {
 // ============================================================================
 
 export type VerificationCheckName =
-  | 'LIVE_STATE_CHECK'
-  | 'IDEMPOTENCY_CHECK'
-  | 'CIRCUIT_BREAKER_CHECK'
-  | 'POLICY_FRESHNESS_CHECK';
+  'LIVE_STATE_CHECK' | 'IDEMPOTENCY_CHECK' | 'CIRCUIT_BREAKER_CHECK' | 'POLICY_FRESHNESS_CHECK';
 
 export type VerificationStatus = 'VERIFIED_SAFE' | 'BLOCKED';
 

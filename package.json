@@ -23,6 +23,7 @@
     "planner:batch": "npm run planner:batch -w @recovery/scripts",
     "policy:batch": "npm run policy:batch -w @recovery/scripts",
     "cb:simulate": "npm run cb:simulate -w @recovery/scripts",
+    "demo:stale-cache": "npm run demo:stale-cache -w @recovery/scripts",
     "razorpay:seed-test-data": "npm run razorpay:seed-test-data -w @recovery/scripts",
     "dev": "concurrently -n \"server,web\" -c \"blue,green\" \"npm run dev -w @recovery/server\" \"npm run dev -w @recovery/web\"",
     "clean": "rimraf dist build **/dist **/build **/node_modules"

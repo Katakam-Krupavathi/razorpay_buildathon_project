@@ -1,8 +1,5 @@
 import pg from 'pg';
-import type {
-  PreActionVerificationRecord,
-  StaleStateDetectedPayload,
-} from '@recovery/shared';
+import type { PreActionVerificationRecord, StaleStateDetectedPayload } from '@recovery/shared';
 import { VerificationGateway } from './gateway.js';
 import { EventStore } from '../event-store/event-store.js';
 import { getPool } from '../db/connection.js';
@@ -24,11 +21,7 @@ export class VerificationService {
   private eventStore: EventStore;
   private pool: pg.Pool;
 
-  constructor(
-    gateway?: VerificationGateway,
-    eventStore?: EventStore,
-    pool?: pg.Pool,
-  ) {
+  constructor(gateway?: VerificationGateway, eventStore?: EventStore, pool?: pg.Pool) {
     this.pool = pool || getPool();
     this.eventStore = eventStore || new EventStore(this.pool);
     this.gateway = gateway || new VerificationGateway();
