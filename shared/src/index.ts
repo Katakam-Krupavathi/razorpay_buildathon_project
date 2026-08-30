@@ -548,6 +548,106 @@ export interface StaleStateDetectedPayload {
 }
 
 // ============================================================================
+// Escalation Queue & Workflow
+// ============================================================================
+
+export type EscalationStatus = 'pending' | 'resolved' | 'dismissed';
+
+export interface DbEscalationRecord {
+  escalation_id: string;
+  instrument_id: string;
+  subscription_id: string | null;
+  reason: string;
+  blocked_reason: string | null;
+  status: EscalationStatus;
+  proposed_action: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolution_notes: string | null;
+}
+
+// ============================================================================
+// Notification Provider & Channels
+// ============================================================================
+
+export type NotificationChannel = 'email' | 'sms' | 'whatsapp';
+
+export interface NotificationDeliveryResult {
+  messageId: string;
+  recipient: string;
+  channel: NotificationChannel;
+  template: string;
+  status: 'delivered' | 'failed';
+  deliveredAt: string;
+  details?: Record<string, unknown>;
+}
+
+// ============================================================================
+// Execution Layer Types
+// ============================================================================
+
+export type ExecutionStatus =
+  | 'executed'
+  | 'scheduled'
+  | 'paused'
+  | 'nudged'
+  | 'escalated'
+  | 'no_op'
+  | 'failed';
+
+export interface ExecutionActionResult {
+  actionId: string;
+  instrumentId: string;
+  subscriptionId: string | null;
+  action: PlannerActionType;
+  status: ExecutionStatus;
+  idempotencyKey: string;
+  executedAt: string;
+  externalReferenceId?: string;
+  details: Record<string, unknown>;
+}
+
+// ============================================================================
+// End-to-End Recovery Pipeline Orchestration
+// ============================================================================
+
+export type PipelineStatus =
+  | 'executed'
+  | 'escalated'
+  | 'blocked_by_policy'
+  | 'blocked_by_circuit_breaker'
+  | 'blocked_by_verification'
+  | 'no_op';
+
+export interface PipelineInstrumentResult {
+  instrumentId: string;
+  subscriptionId: string | null;
+  healthSnapshot: HealthEvaluationResult;
+  proposedPlan: ProposedActionRecord;
+  policyDecision: PolicyDecisionRecord;
+  verification?: PreActionVerificationRecord;
+  execution?: ExecutionActionResult;
+  escalation?: DbEscalationRecord;
+  pipelineStatus: PipelineStatus;
+  completedAt: string;
+}
+
+export interface PipelineBatchSummary {
+  totalProcessed: number;
+  executedCount: number;
+  byActionType: Record<string, number>;
+  escalatedCount: number;
+  blockedByPolicyCount: number;
+  blockedByCircuitBreakerCount: number;
+  blockedByVerificationCount: number;
+  noOpCount: number;
+  wallClockMs: number;
+  completedAt: string;
+}
+
+// ============================================================================
 // Net Value Recovered (NVR) & Attribution
 // ============================================================================
 
