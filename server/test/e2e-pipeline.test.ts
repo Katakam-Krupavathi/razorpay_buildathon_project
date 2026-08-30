@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { EventStore } from '../src/event-store/event-store.js';
 import { RecoveryPipelineOrchestrator } from '../src/pipeline/orchestrator.js';
-import { HealthService } from '../src/risk/health-service.js';
 import { DecisionTraceService } from '../src/audit/decision-trace-service.js';
 import { RazorpayClient } from '../src/razorpay/client.js';
 import { createTestDatabase, type TestPool } from './test-db.js';
@@ -10,7 +9,6 @@ describe('Phase 13: End-to-End Autonomous Control Loop Integration Tests', () =>
   let pool: TestPool;
   let cleanup: () => Promise<void>;
   let eventStore: EventStore;
-  let healthService: HealthService;
   let orchestrator: RecoveryPipelineOrchestrator;
   let decisionTraceService: DecisionTraceService;
 
@@ -19,7 +17,6 @@ describe('Phase 13: End-to-End Autonomous Control Loop Integration Tests', () =>
     pool = testDb.pool;
     cleanup = testDb.cleanup;
     eventStore = new EventStore(pool);
-    healthService = new HealthService(eventStore, pool);
     orchestrator = new RecoveryPipelineOrchestrator({ pool, eventStore });
     decisionTraceService = new DecisionTraceService(pool, eventStore);
   });

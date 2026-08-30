@@ -5,7 +5,6 @@ import type {
   OpportunityQueueItem,
   InstrumentListItem,
   CircuitBreakerStatus,
-  DecisionTrace,
 } from '@recovery/shared';
 import { ScorecardBanner } from '../src/components/ScorecardBanner.js';
 import { OpportunityQueue } from '../src/components/OpportunityQueue.js';
