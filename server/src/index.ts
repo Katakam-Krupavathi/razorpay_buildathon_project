@@ -28,8 +28,13 @@ export * from './circuit-breaker/types.js';
 export * from './circuit-breaker/circuit-breaker.js';
 export * from './circuit-breaker/circuit-breaker-guard.js';
 export * from './routes/circuit-breaker.js';
+export * from './verification/types.js';
+export * from './verification/gateway.js';
+export * from './verification/verification-service.js';
+export * from './routes/dev-hooks.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
+import { devHookRoutes } from './routes/dev-hooks.js';
 import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
 
 dotenv.config();
@@ -61,6 +66,9 @@ export async function buildApp(opts?: AppOptions) {
 
   // Register Circuit Breaker Routes
   await app.register(circuitBreakerRoutes, { circuitBreaker });
+
+  // Register Dev Simulation Hooks Routes
+  await app.register(devHookRoutes);
 
   // Root & Health Check Endpoints
   app.get('/', async () => {
