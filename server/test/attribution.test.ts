@@ -42,6 +42,17 @@ describe('Outcome Attribution & Counterfactual Financial Engine Tests', () => {
   }
 
   function createMockHealth(overrides?: Partial<HealthEvaluationResult>): HealthEvaluationResult {
+    const baseFeatureVector = {
+      failure_count_last_3_cycles: 0,
+      success_count_total: 12,
+      days_to_expiry_normalized: 0.1,
+      consecutive_soft_declines: 0,
+      consecutive_hard_declines: 0,
+      has_afa_pending: false,
+      mandate_active: true,
+      issuer_success_rate_prior: 0.9,
+    };
+
     return {
       instrumentId: 'inst_attr_001',
       subscriptionId: 'sub_attr_001',
@@ -50,14 +61,8 @@ describe('Outcome Attribution & Counterfactual Financial Engine Tests', () => {
       rootCause: 'CARD_EXPIRY_RISK',
       recoveryProbability: 0.85,
       featureVector: {
-        failure_count_last_3_cycles: 0,
-        success_count_total: 12,
-        days_to_expiry_normalized: 0.1,
-        consecutive_soft_declines: 0,
-        consecutive_hard_declines: 0,
-        has_afa_pending: false,
-        mandate_active: true,
-        issuer_success_rate_prior: 0.9,
+        ...baseFeatureVector,
+        ...(overrides?.featureVector || {}),
       },
       computedAt: new Date().toISOString(),
       ...overrides,
@@ -70,7 +75,16 @@ describe('Outcome Attribution & Counterfactual Financial Engine Tests', () => {
       const health = createMockHealth({
         trajectory: 'DEGRADING',
         rootCause: 'CARD_EXPIRY_RISK',
-        featureVector: { failure_count_last_3_cycles: 0 } as any,
+        featureVector: {
+          failure_count_last_3_cycles: 0,
+          success_count_total: 12,
+          days_to_expiry_normalized: 0.1,
+          consecutive_soft_declines: 0,
+          consecutive_hard_declines: 0,
+          has_afa_pending: false,
+          mandate_active: true,
+          issuer_success_rate_prior: 0.9,
+        },
       });
       const plan: ProposedActionRecord = {
         instrumentId: instrument.instrument_id,
@@ -114,7 +128,16 @@ describe('Outcome Attribution & Counterfactual Financial Engine Tests', () => {
       const health = createMockHealth({
         trajectory: 'DEGRADING',
         rootCause: 'REPEATED_SOFT_DECLINE',
-        featureVector: { failure_count_last_3_cycles: 2 } as any,
+        featureVector: {
+          failure_count_last_3_cycles: 2,
+          success_count_total: 10,
+          days_to_expiry_normalized: 1.0,
+          consecutive_soft_declines: 2,
+          consecutive_hard_declines: 0,
+          has_afa_pending: false,
+          mandate_active: true,
+          issuer_success_rate_prior: 0.9,
+        },
       });
       const plan: ProposedActionRecord = {
         instrumentId: instrument.instrument_id,
@@ -158,7 +181,16 @@ describe('Outcome Attribution & Counterfactual Financial Engine Tests', () => {
       const health = createMockHealth({
         trajectory: 'HEALTHY',
         rootCause: 'NONE',
-        featureVector: { failure_count_last_3_cycles: 0 } as any,
+        featureVector: {
+          failure_count_last_3_cycles: 0,
+          success_count_total: 12,
+          days_to_expiry_normalized: 1.0,
+          consecutive_soft_declines: 0,
+          consecutive_hard_declines: 0,
+          has_afa_pending: false,
+          mandate_active: true,
+          issuer_success_rate_prior: 0.95,
+        },
       });
       const plan: ProposedActionRecord = {
         instrumentId: instrument.instrument_id,

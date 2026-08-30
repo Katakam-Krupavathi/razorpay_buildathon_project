@@ -1,7 +1,5 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { AttributionService } from '../attribution/attribution-service.js';
-import type { DbRecoveryOutcome } from '@recovery/shared';
-import { getPool } from '../db/connection.js';
 
 export interface AttributionRouteOptions {
   attributionService?: AttributionService;
@@ -12,7 +10,6 @@ export const attributionRoutes: FastifyPluginAsync<AttributionRouteOptions> = as
   options: AttributionRouteOptions,
 ) => {
   const attributionService = options.attributionService || new AttributionService();
-  const pool = getPool();
 
   // GET /api/attribution/scorecard - Financial Impact Scorecard
   fastify.get('/api/attribution/scorecard', async (_request, reply) => {

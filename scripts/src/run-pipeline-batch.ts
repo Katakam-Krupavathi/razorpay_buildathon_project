@@ -183,18 +183,36 @@ export async function runPipelineBatchCli(): Promise<PipelineBatchSummary> {
     }
   }
 
+  if (summary.scorecard) {
+    const sc = summary.scorecard;
+    console.log('\n================ FINANCIAL ATTRIBUTION & NVR SCORECARD ================');
+    console.log(`Total Monitored MRR          : ₹${Math.round(sc.totalMonitoredMRRPaise / 100).toLocaleString('en-IN')}`);
+    console.log(`Total Monitored ARR          : ₹${Math.round(sc.totalMonitoredARRPaise / 100).toLocaleString('en-IN')}`);
+    console.log(`Total At-Risk MRR            : ₹${Math.round(sc.totalAtRiskMRRPaise / 100).toLocaleString('en-IN')}`);
+    console.log(`Total Recovered MRR          : ₹${Math.round(sc.totalRecoveredMRRPaise / 100).toLocaleString('en-IN')}`);
+    console.log(`  - Proactive Recovered MRR  : ₹${Math.round(sc.proactiveRecoveredMRRPaise / 100).toLocaleString('en-IN')} (${sc.proactiveSubscriptionsCount} subs)`);
+    console.log(`  - Reactive Recovered MRR   : ₹${Math.round(sc.reactiveRecoveredMRRPaise / 100).toLocaleString('en-IN')} (${sc.reactiveSubscriptionsCount} subs)`);
+    console.log(`Revenue Prevented (Net Saved): ₹${Math.round(sc.revenuePreventedMRRPaise / 100).toLocaleString('en-IN')}`);
+    console.log(`Intentionally Untouched MRR  : ₹${Math.round(sc.untouchedMRRPaise / 100).toLocaleString('en-IN')} (${sc.untouchedSubscriptionsCount} healthy subs)`);
+    console.log(`Unsafe/Blocked Actions Count : ${sc.unsafeBlockedActionsCount}`);
+    console.log(`Net Value Recovered (NVR)    : ₹${Math.round(sc.netValueRecoveredPaise / 100).toLocaleString('en-IN')}`);
+    console.log(`Autonomous Recovery Rate     : ${sc.recoveryRatePercent}%`);
+    console.log('========================================================================');
+  }
+
   // Audit trail verification
   const events = await eventStore.getAllEvents({ limit: 5000 });
   const execEvents = events.filter(
     (e) =>
       e.eventType === 'action_executed' ||
       e.eventType === 'action_escalated' ||
-      e.eventType === 'action_noop',
+      e.eventType === 'action_noop' ||
+      e.eventType === 'recovery_recorded',
   );
 
-  console.log(`\nExecution Events Appended   : ${execEvents.length}`);
+  console.log(`\nExecution & Attribution Events: ${execEvents.length}`);
   const integrity = await eventStore.verifyChainIntegrity();
-  console.log(`Event Store Chain Integrity : ${integrity.valid ? 'VALID (100% Intact Chain)' : 'INVALID'}`);
+  console.log(`Event Store Chain Integrity   : ${integrity.valid ? 'VALID (100% Intact Chain)' : 'INVALID'}`);
   console.log('================================================================\n');
 
   if (!isInMemory) {
