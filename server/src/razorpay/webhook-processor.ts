@@ -71,7 +71,8 @@ export class WebhookProcessor {
     return (
       payload.payload?.subscription?.entity?.id ||
       payload.payload?.payment?.entity?.subscription_id ||
-      (payload.payload?.invoice?.entity as { subscription_id?: string } | undefined)?.subscription_id ||
+      (payload.payload?.invoice?.entity as { subscription_id?: string } | undefined)
+        ?.subscription_id ||
       null
     );
   }
@@ -110,9 +111,7 @@ export class WebhookProcessor {
    * 1. Appends raw immutable event into the Event Store (actor = 'razorpay_webhook').
    * 2. Projects and materializes the updated subscription state into the subscriptions table.
    */
-  public async processWebhook(
-    payload: RazorpayWebhookPayload,
-  ): Promise<WebhookProcessingResult> {
+  public async processWebhook(payload: RazorpayWebhookPayload): Promise<WebhookProcessingResult> {
     const subscriptionId = this.extractSubscriptionId(payload);
     const instrumentId = this.extractInstrumentId(payload);
     const customerId = this.extractCustomerId(payload) || 'cust_unknown';

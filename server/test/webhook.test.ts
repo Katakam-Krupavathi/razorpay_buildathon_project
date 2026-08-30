@@ -243,7 +243,10 @@ describe('Razorpay Webhook Verification & Ingestion Engine', () => {
     });
 
     it('8. should correctly handle and project all 9 Razorpay subscription webhook lifecycle events', async () => {
-      const eventSequence: Array<{ event: RazorpayWebhookPayload['event']; expectedStatus: string }> = [
+      const eventSequence: Array<{
+        event: RazorpayWebhookPayload['event'];
+        expectedStatus: string;
+      }> = [
         { event: 'subscription.activated', expectedStatus: 'active' },
         { event: 'subscription.charged', expectedStatus: 'active' },
         { event: 'subscription.updated', expectedStatus: 'active' },

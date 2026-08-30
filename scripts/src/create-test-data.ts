@@ -27,8 +27,7 @@ export async function createRazorpayTestData(
 
   console.log('[Razorpay Test Data] Initializing test plan and subscriptions setup...');
 
-  const isPlaceholderKey =
-    !rzp.getKeyId() || rzp.getKeyId().includes('placeholder');
+  const isPlaceholderKey = !rzp.getKeyId() || rzp.getKeyId().includes('placeholder');
 
   let planId = 'plan_test_pro_monthly';
 
@@ -52,10 +51,7 @@ export async function createRazorpayTestData(
       planId = plan.id;
       console.log(`[Razorpay Test Data] Created Plan: ${planId}`);
     } catch (error) {
-      console.warn(
-        '[Razorpay Test Data] Live plan creation failed, using mock plan ID:',
-        error,
-      );
+      console.warn('[Razorpay Test Data] Live plan creation failed, using mock plan ID:', error);
     }
   } else {
     console.log(
@@ -113,7 +109,10 @@ export async function createRazorpayTestData(
         const liveSub = await rzp.createSubscription(subParams);
         subscriptionId = liveSub.id;
       } catch (err) {
-        console.warn(`[Razorpay Test Data] Live subscription create failed for ${item.subId}, using local ID:`, err);
+        console.warn(
+          `[Razorpay Test Data] Live subscription create failed for ${item.subId}, using local ID:`,
+          err,
+        );
       }
     }
 
@@ -149,13 +148,7 @@ export async function createRazorpayTestData(
       SET status = EXCLUDED.status,
           current_instrument_id = EXCLUDED.current_instrument_id,
           updated_at = NOW();`,
-      [
-        subscriptionId,
-        item.customerId,
-        planId,
-        item.status,
-        item.instrumentId,
-      ],
+      [subscriptionId, item.customerId, planId, item.status, item.instrumentId],
     );
 
     testSubscriptions.push({

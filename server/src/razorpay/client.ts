@@ -1,8 +1,5 @@
 import dotenv from 'dotenv';
-import type {
-  RazorpaySubscriptionEntity,
-  RazorpayMandate,
-} from '@recovery/shared';
+import type { RazorpaySubscriptionEntity, RazorpayMandate } from '@recovery/shared';
 
 dotenv.config();
 
@@ -65,8 +62,7 @@ export class RazorpayClient {
   constructor(customConfig?: Partial<RazorpayClientConfig>) {
     const keyId = customConfig?.keyId || process.env.RAZORPAY_KEY_ID || '';
     const keySecret = customConfig?.keySecret || process.env.RAZORPAY_KEY_SECRET || '';
-    const webhookSecret =
-      customConfig?.webhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET || '';
+    const webhookSecret = customConfig?.webhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET || '';
     const baseUrl = customConfig?.baseUrl || 'https://api.razorpay.com/v1';
 
     this.config = {
@@ -140,9 +136,7 @@ export class RazorpayClient {
   /**
    * Creates a new recurring subscription.
    */
-  async createSubscription(
-    params: CreateSubscriptionParams,
-  ): Promise<RazorpaySubscriptionEntity> {
+  async createSubscription(params: CreateSubscriptionParams): Promise<RazorpaySubscriptionEntity> {
     return this.request<RazorpaySubscriptionEntity>('/subscriptions', {
       method: 'POST',
       body: JSON.stringify({

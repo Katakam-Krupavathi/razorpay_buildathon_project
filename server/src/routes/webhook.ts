@@ -9,10 +9,7 @@ export interface WebhookRouteOptions {
   webhookSecret?: string;
 }
 
-export const webhookRoutes: FastifyPluginAsync<WebhookRouteOptions> = async (
-  fastify,
-  options,
-) => {
+export const webhookRoutes: FastifyPluginAsync<WebhookRouteOptions> = async (fastify, options) => {
   const razorpayClient = new RazorpayClient();
   const webhookSecret = options.webhookSecret || razorpayClient.getWebhookSecret();
   const processor = options.processor || new WebhookProcessor();
@@ -20,16 +17,12 @@ export const webhookRoutes: FastifyPluginAsync<WebhookRouteOptions> = async (
   // POST /api/webhooks/razorpay
   fastify.post(
     '/api/webhooks/razorpay',
-    async (
-      request: FastifyRequest<{ Body: RazorpayWebhookPayload }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Body: RazorpayWebhookPayload }>, reply: FastifyReply) => {
       const signature = request.headers['x-razorpay-signature'] as string | undefined;
 
       // Extract raw body or serialize body to string if rawBody not attached
       const rawBody =
-        (request as unknown as { rawBody?: string }).rawBody ||
-        JSON.stringify(request.body);
+        (request as unknown as { rawBody?: string }).rawBody || JSON.stringify(request.body);
 
       // 1. Verify HMAC-SHA256 signature
       const isValid = verifyWebhookSignature(rawBody, signature, webhookSecret);

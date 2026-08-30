@@ -15,7 +15,6 @@ export async function seedSyntheticEvents(options?: SeedOptions): Promise<ChainI
 
   console.log(`[Seed] Generating and appending ${count} synthetic events...`);
 
-
   const eventTemplates: Array<{
     eventType: string;
     actor: EventActor;

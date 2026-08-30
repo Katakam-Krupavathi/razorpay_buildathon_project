@@ -55,7 +55,9 @@ describe('RazorpayClient SDK Wrapper', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toBe('https://api.razorpay.com/v1/subscriptions/sub_live_123');
-    expect(options.headers.Authorization).toBe('Basic ' + Buffer.from('rzp_test_key_1:rzp_test_secret_1').toString('base64'));
+    expect(options.headers.Authorization).toBe(
+      'Basic ' + Buffer.from('rzp_test_key_1:rzp_test_secret_1').toString('base64'),
+    );
     expect(result.id).toBe('sub_live_123');
     expect(result.status).toBe('active');
   });

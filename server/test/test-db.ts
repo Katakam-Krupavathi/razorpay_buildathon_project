@@ -107,7 +107,7 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   let immutabilityTriggerActive = true;
 
   const originalQuery = pool.query.bind(pool);
-  pool.query = (function <R extends QueryResultRow = QueryResultRow>(
+  pool.query = function <R extends QueryResultRow = QueryResultRow>(
     queryTextOrConfig: string | pg.QueryConfig<unknown[]>,
     values?: unknown[],
   ): Promise<pg.QueryResult<R>> {
@@ -122,13 +122,13 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       }
     }
     return originalQuery(queryTextOrConfig as string, values);
-  }) as typeof pool.query;
+  } as typeof pool.query;
 
   const originalConnect = pool.connect.bind(pool);
   pool.connect = (async (): Promise<pg.PoolClient> => {
     const client = await originalConnect();
     const origClientQuery = client.query.bind(client);
-    client.query = (function <R extends QueryResultRow = QueryResultRow>(
+    client.query = function <R extends QueryResultRow = QueryResultRow>(
       queryTextOrConfig: string | pg.QueryConfig<unknown[]>,
       values?: unknown[],
     ): Promise<pg.QueryResult<R>> {
@@ -144,7 +144,7 @@ export async function createTestDatabase(): Promise<TestDatabase> {
         }
       }
       return origClientQuery(queryTextOrConfig as string, values);
-    }) as typeof client.query;
+    } as typeof client.query;
     return client;
   }) as typeof pool.connect;
 
