@@ -100,6 +100,21 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       status VARCHAR(50) NOT NULL,
       completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE escalation_queue (
+      escalation_id VARCHAR(255) PRIMARY KEY,
+      instrument_id VARCHAR(255) NOT NULL,
+      subscription_id VARCHAR(255) NULL,
+      reason TEXT NOT NULL,
+      blocked_reason VARCHAR(100) NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'pending',
+      proposed_action VARCHAR(100) NULL,
+      payload JSONB NOT NULL DEFAULT '{}',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      resolved_at TIMESTAMPTZ NULL,
+      resolved_by VARCHAR(255) NULL,
+      resolution_notes TEXT NULL
+    );
   `);
 
   // Create pg-mem adapter pool
