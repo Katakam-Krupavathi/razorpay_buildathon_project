@@ -47,12 +47,14 @@ export * from './audit/types.js';
 export * from './audit/decision-trace-service.js';
 export * from './audit/compliance-service.js';
 export * from './routes/audit.js';
+export * from './routes/dashboard.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { devHookRoutes } from './routes/dev-hooks.js';
 import { escalationRoutes, EscalationRouteOptions } from './routes/escalations.js';
 import { attributionRoutes, AttributionRouteOptions } from './routes/attribution.js';
 import { auditRoutes, AuditRouteOptions } from './routes/audit.js';
+import { dashboardRoutes, DashboardRouteOptions } from './routes/dashboard.js';
 import { CohortCircuitBreaker } from './circuit-breaker/circuit-breaker.js';
 import { EscalationService } from './escalation/escalation-service.js';
 import { AttributionService } from './attribution/attribution-service.js';
@@ -65,6 +67,7 @@ export interface AppOptions extends FastifyServerOptions {
   escalationOptions?: EscalationRouteOptions;
   attributionOptions?: AttributionRouteOptions;
   auditOptions?: AuditRouteOptions;
+  dashboardOptions?: DashboardRouteOptions;
 }
 
 export async function buildApp(opts?: AppOptions) {
@@ -102,6 +105,9 @@ export async function buildApp(opts?: AppOptions) {
 
   // Register Decision Trace & Compliance Audit Routes
   await app.register(auditRoutes, { decisionTraceService, complianceService });
+
+  // Register Dashboard & Opportunity Queue Routes
+  await app.register(dashboardRoutes, opts?.dashboardOptions || {});
 
   // Root & Health Check Endpoints
   app.get('/', async () => {

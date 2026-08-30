@@ -848,7 +848,7 @@ export interface OpportunityQueueItem {
   amountAtRiskPaise: number;
   expectedRecoveryValuePaise: number;
   recoveryProbability: number;
-  recommendedAction: PlannerActionType;
+  recommendedAction: RecoveryActionType | PlannerActionType | string;
   ltvTier: string;
   mandateStatus: MandateStatusEnum;
   evaluatedAt: string;
