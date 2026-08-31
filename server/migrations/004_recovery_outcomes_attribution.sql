@@ -4,6 +4,7 @@
 -- ============================================================================
 
 ALTER TABLE recovery_outcomes
+    ALTER COLUMN invoice_id DROP NOT NULL,
     ADD COLUMN IF NOT EXISTS instrument_id VARCHAR(255) NULL,
     ADD COLUMN IF NOT EXISTS at_risk_amount BIGINT NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS recovery_type VARCHAR(50) NOT NULL DEFAULT 'none',

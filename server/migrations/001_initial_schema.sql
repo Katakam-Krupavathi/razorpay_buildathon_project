@@ -164,7 +164,7 @@ CREATE INDEX IF NOT EXISTS idx_policy_decisions_evaluated_at ON policy_decisions
 
 CREATE TABLE IF NOT EXISTS recovery_outcomes (
     outcome_id VARCHAR(255) PRIMARY KEY,
-    invoice_id VARCHAR(255) NOT NULL,
+    invoice_id VARCHAR(255) NULL,
     subscription_id VARCHAR(255) NOT NULL,
     recovered_amount BIGINT NOT NULL DEFAULT 0,
     cost_incurred BIGINT NOT NULL DEFAULT 0,
