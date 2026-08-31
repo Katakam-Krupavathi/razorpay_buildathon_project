@@ -18,7 +18,7 @@ Where:
 
 ## 2. Action Success Rate Benchmark Matrix
 
-The engine looks up action success rates from a structured configuration table ([`server/src/risk/erv-config.ts`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/server/src/risk/erv-config.ts)):
+The engine looks up action success rates from a structured configuration table ([`server/src/risk/erv-config.ts`](../server/src/risk/erv-config.ts)):
 
 | Payment Rail    | Recovery Action Type          | Benchmark Success Rate | Target Root Cause               |
 | :-------------- | :---------------------------- | :--------------------- | :------------------------------ |

@@ -24,7 +24,7 @@ The Policy Engine evaluates four possible outcomes:
 
 ## 2. Hard Rail Rules & Published Constraints
 
-All rules are loaded from a versioned configuration file ([`server/src/policy/policy-config.json`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/server/src/policy/policy-config.json)):
+All rules are loaded from a versioned configuration file ([`server/src/policy/policy-config.json`](../server/src/policy/policy-config.json)):
 
 ### A. Card Tokenized Auto-Debit (`card`)
 

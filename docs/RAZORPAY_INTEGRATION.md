@@ -93,7 +93,7 @@ export function verifyWebhookSignature(
 
 ## 4. Razorpay Client SDK Wrapper
 
-The server-side client ([`server/src/razorpay/client.ts`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/server/src/razorpay/client.ts)) provides methods to interact with Razorpay APIs using test-mode credentials:
+The server-side client ([`server/src/razorpay/client.ts`](../server/src/razorpay/client.ts)) provides methods to interact with Razorpay APIs using test-mode credentials:
 
 ### Available Client Methods:
 

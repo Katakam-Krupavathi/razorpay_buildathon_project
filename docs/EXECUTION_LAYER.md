@@ -88,10 +88,10 @@ When an automated action is blocked by the Policy Engine, Circuit Breaker, or Ve
 
 To ensure batch scripts (`npm run pipeline:batch`, `npm run seed:synthetic`, etc.) never hang or unexpectedly bind network ports:
 
-1. The **Fastify HTTP listener** is isolated in [`server/src/server.ts`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/server/src/server.ts).
-2. The core library entrypoint [`server/src/index.ts`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/server/src/index.ts) purely exports classes, functions, and schemas without calling `.listen()`.
+1. The **Fastify HTTP listener** is isolated in [`server/src/server.ts`](../server/src/server.ts).
+2. The core library entrypoint [`server/src/index.ts`](../server/src/index.ts) purely exports classes, functions, and schemas without calling `.listen()`.
 3. CLI scripts import only the orchestrator and database connections, and explicitly close resources (`await closePool()`) before executing `process.exit(0)`.
-4. Automated architectural regression tests ([`server/test/architecture-boundary.test.ts`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/server/test/architecture-boundary.test.ts)) continuously enforce that scripts have zero HTTP server dependencies.
+4. Automated architectural regression tests ([`server/test/architecture-boundary.test.ts`](../server/test/architecture-boundary.test.ts)) continuously enforce that scripts have zero HTTP server dependencies.
 
 ---
 

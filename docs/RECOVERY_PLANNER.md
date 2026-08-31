@@ -39,7 +39,7 @@ This document specifies the architecture, heuristic strategy matrix, explainable
 
 ### Architectural Guard:
 
-An automated architectural test ([`server/test/planner-boundary.test.ts`](file:///c:/Users/krupa/OneDrive/Desktop/buildathon/server/test/planner-boundary.test.ts)) statically inspects the codebase to guarantee that no files in `server/src/planner/` import or depend upon:
+An automated architectural test ([`server/test/planner-boundary.test.ts`](../server/test/planner-boundary.test.ts)) statically inspects the codebase to guarantee that no files in `server/src/planner/` import or depend upon:
 
 - Razorpay client wrappers or payment gateways
 - HTTP client libraries (`fetch`, `axios`, `http`)
