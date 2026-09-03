@@ -154,6 +154,7 @@ export async function runPipelineBatchCli(): Promise<PipelineBatchSummary> {
     const generator = new SyntheticDataGenerator({ seed: 42 });
     const specs = generator.generate(100);
     const seeder = new SyntheticDataSeeder(eventStore, pool);
+    await seeder.seedBatch(specs);
     console.log(`[Pipeline Batch] In-memory database seeded with ${specs.length} subscriptions.\n`);
   }
 
