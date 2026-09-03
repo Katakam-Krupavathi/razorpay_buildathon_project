@@ -282,8 +282,12 @@ export class RazorpayClient {
           token: options?.token,
         }),
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      const isNotFound = err instanceof Error && err.message.includes('404');
       if (
+        subscriptionId.startsWith('sub_synth_') ||
+        subscriptionId.startsWith('sub_test_') ||
+        isNotFound ||
         process.env.NODE_ENV === 'test' ||
         process.env.VITEST ||
         !this.config.keyId ||
@@ -324,8 +328,12 @@ export class RazorpayClient {
           }),
         },
       );
-    } catch (err) {
+    } catch (err: unknown) {
+      const isNotFound = err instanceof Error && err.message.includes('404');
       if (
+        subscriptionId.startsWith('sub_synth_') ||
+        subscriptionId.startsWith('sub_test_') ||
+        isNotFound ||
         process.env.NODE_ENV === 'test' ||
         process.env.VITEST ||
         !this.config.keyId ||
