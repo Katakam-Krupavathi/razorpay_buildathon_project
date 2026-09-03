@@ -403,7 +403,7 @@ describe('Comprehensive Multi-Case Edge & Boundary Test Suite', () => {
   // ===========================================================================
   describe('5. Safety Verification Gateway Zero-Trust Pre-Action Guard', () => {
     it('5.1 should block stale policy decisions (> 15 minutes old)', async () => {
-      const gateway = new VerificationGateway();
+      const gateway = new VerificationGateway(undefined, undefined, undefined, pool);
       const staleDecisionTime = new Date(Date.now() - 1000 * 1000).toISOString(); // 1000s ago (> 900s limit)
 
       RazorpayClient.setSimulatedLiveOverride('inst_stale_policy', { mandateStatus: 'active' });
@@ -434,8 +434,8 @@ describe('Comprehensive Multi-Case Edge & Boundary Test Suite', () => {
     });
 
     it('5.2 should block duplicate idempotency key execution', async () => {
-      const gateway = new VerificationGateway();
-      const idemKey = 'idem_unique_test_123';
+      const gateway = new VerificationGateway(undefined, undefined, undefined, pool);
+      const idemKey = `idem_unique_test_${Date.now()}`;
 
       RazorpayClient.setSimulatedLiveOverride('inst_idem_test', { mandateStatus: 'active' });
 
