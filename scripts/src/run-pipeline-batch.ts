@@ -6,6 +6,7 @@ import {
   getPool,
   closePool,
   EventStore,
+  RazorpayClient,
   type PipelineBatchSummary,
 } from '@recovery/server';
 import { SyntheticDataGenerator } from './synthetic/generator.js';
@@ -153,8 +154,19 @@ export async function runPipelineBatchCli(): Promise<PipelineBatchSummary> {
     const generator = new SyntheticDataGenerator({ seed: 42 });
     const specs = generator.generate(100);
     const seeder = new SyntheticDataSeeder(eventStore, pool);
-    await seeder.seedBatch(specs);
     console.log(`[Pipeline Batch] In-memory database seeded with ${specs.length} subscriptions.\n`);
+  }
+
+  // Register simulated live token overrides for synthetic batch run
+  const generator = new SyntheticDataGenerator({ seed: 42 });
+  const specs = generator.generate(100);
+  for (const spec of specs) {
+    RazorpayClient.setSimulatedLiveOverride(spec.instrumentId, {
+      mandateStatus: spec.isStaleCacheCandidate ? 'revoked' : spec.mandateStatus,
+    });
+    RazorpayClient.setSimulatedLiveOverride(spec.subscriptionId, {
+      subscriptionStatus: spec.isStaleCacheCandidate ? 'halted' : spec.finalStatus,
+    });
   }
 
   const orchestrator = new RecoveryPipelineOrchestrator({ pool, eventStore });
