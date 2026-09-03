@@ -29,6 +29,7 @@ describe('Safety & Verification Gateway ("2 AM" Pre-Action Guard) Tests', () => 
     });
     service = new VerificationService(gateway, eventStore, pool);
     RazorpayClient.clearSimulatedLiveOverrides();
+    RazorpayClient.setSimulatedLiveOverride('inst_verify_001', { mandateStatus: 'active' });
   });
 
   afterEach(async () => {
@@ -218,6 +219,26 @@ describe('Safety & Verification Gateway ("2 AM" Pre-Action Guard) Tests', () => 
       expect(result.status).toBe('VERIFIED_SAFE');
       const freshCheck = result.checks.find((c) => c.check === 'POLICY_FRESHNESS_CHECK');
       expect(freshCheck?.passed).toBe(true);
+    });
+
+    it('7.1 FAIL CLOSED CHECK (FIX 3): should BLOCK with INTERNAL_VERIFICATION_ERROR when Razorpay API call errors or is unreachable', async () => {
+      const instrument = createMockInstrument({ instrument_id: 'inst_unreachable_api' });
+      const decision = createMockDecision({ instrumentId: 'inst_unreachable_api' });
+
+      // Clear any simulated override so live API call fails / is unreachable
+      RazorpayClient.clearSimulatedLiveOverrides();
+
+      const result = await gateway.verify({
+        instrument,
+        decision,
+        idempotencyKey: 'idem_fail_closed_001',
+      });
+
+      expect(result.status).toBe('BLOCKED');
+      expect(result.blockedReason).toBe('INTERNAL_VERIFICATION_ERROR');
+      const liveCheck = result.checks.find((c) => c.check === 'LIVE_STATE_CHECK');
+      expect(liveCheck?.passed).toBe(false);
+      expect(liveCheck?.reason).toContain('Failed to positively verify live state');
     });
   });
 

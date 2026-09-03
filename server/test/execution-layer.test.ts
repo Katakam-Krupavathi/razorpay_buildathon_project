@@ -34,9 +34,12 @@ describe('Execution Layer & Action Handlers Tests', () => {
       verificationGateway,
       eventStore,
     );
+    RazorpayClient.clearSimulatedLiveOverrides();
+    RazorpayClient.setSimulatedLiveOverride('inst_exec_001', { mandateStatus: 'active' });
   });
 
   afterEach(async () => {
+    RazorpayClient.clearSimulatedLiveOverrides();
     await cleanup();
   });
 

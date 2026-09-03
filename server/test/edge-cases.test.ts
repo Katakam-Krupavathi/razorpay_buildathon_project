@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { EventStore } from '../src/event-store/event-store.js';
 import { computeEventHash, canonicalizeJson } from '../src/event-store/hasher.js';
 import { evaluateInstrumentHealth } from '../src/risk/scorer.js';
-import { decide, DEFAULT_POLICY_CONFIG } from '../src/policy/engine.js';
+import { decide } from '../src/policy/engine.js';
 import { CohortCircuitBreaker } from '../src/circuit-breaker/circuit-breaker.js';
 import { VerificationGateway } from '../src/verification/gateway.js';
 import { CounterfactualEngine } from '../src/attribution/counterfactual-engine.js';
@@ -55,7 +55,7 @@ describe('Comprehensive Multi-Case Edge & Boundary Test Suite', () => {
     });
 
     it('1.2 should strictly protect events from mutation and detect hash chain validity', async () => {
-      const e1 = await eventStore.appendEvent({
+      await eventStore.appendEvent({
         subscriptionId: 'sub_tamper_01',
         eventType: 'mandate.created',
         actor: 'razorpay_webhook',
@@ -69,7 +69,7 @@ describe('Comprehensive Multi-Case Edge & Boundary Test Suite', () => {
         payload: { error_code: 'INSUFFICIENT_FUNDS' },
       });
 
-      const e3 = await eventStore.appendEvent({
+      await eventStore.appendEvent({
         subscriptionId: 'sub_tamper_01',
         eventType: 'recovery.initiated',
         actor: 'execution_engine',
@@ -404,13 +404,14 @@ describe('Comprehensive Multi-Case Edge & Boundary Test Suite', () => {
   describe('5. Safety Verification Gateway Zero-Trust Pre-Action Guard', () => {
     it('5.1 should block stale policy decisions (> 15 minutes old)', async () => {
       const gateway = new VerificationGateway();
+      const staleDecisionTime = new Date(Date.now() - 1000 * 1000).toISOString(); // 1000s ago (> 900s limit)
 
-      const staleDecisionTime = new Date(Date.now() - 16 * 60 * 1000).toISOString(); // 16 mins ago
+      RazorpayClient.setSimulatedLiveOverride('inst_stale_policy', { mandateStatus: 'active' });
 
       const verifyResult = await gateway.verify({
         instrument: {
-          instrument_id: 'inst_freshness_test',
-          subscription_id: 'sub_freshness_test',
+          instrument_id: 'inst_stale_policy',
+          subscription_id: 'sub_stale_policy',
           rail: 'card',
           mandate_status: 'active',
           created_at: new Date().toISOString(),
@@ -435,6 +436,8 @@ describe('Comprehensive Multi-Case Edge & Boundary Test Suite', () => {
     it('5.2 should block duplicate idempotency key execution', async () => {
       const gateway = new VerificationGateway();
       const idemKey = 'idem_unique_test_123';
+
+      RazorpayClient.setSimulatedLiveOverride('inst_idem_test', { mandateStatus: 'active' });
 
       const context = {
         instrument: {

@@ -8,6 +8,9 @@ import type { VerificationContext, VerificationGatewayConfig } from './types.js'
 import { RazorpayClient } from '../razorpay/client.js';
 import { CohortCircuitBreaker } from '../circuit-breaker/circuit-breaker.js';
 import { CircuitBreakerGuard } from '../circuit-breaker/circuit-breaker-guard.js';
+import type pg from 'pg';
+import type { Redis } from 'ioredis';
+import { getPool } from '../db/connection.js';
 
 export const DEFAULT_GATEWAY_CONFIG: VerificationGatewayConfig = {
   maxPolicyFreshnessAgeSeconds: 900, // 15 minutes max freshness TTL
@@ -18,8 +21,8 @@ export const DEFAULT_GATEWAY_CONFIG: VerificationGatewayConfig = {
  *
  * Runs immediately before any money-moving or customer-facing action executes.
  * Performs 4 mandatory pre-flight checks:
- *   1. Live State Check (Live Razorpay/Bank API vs advisory local cache)
- *   2. Idempotency Check (Duplicate action collision detection)
+ *   1. Live State Check (Live Razorpay/Bank API vs advisory local cache) — FAIL CLOSED
+ *   2. Idempotency Check (Durable Postgres/Redis-backed duplicate action collision detection)
  *   3. Circuit Breaker Re-Check (Cohort outage status)
  *   4. Policy Decision Freshness Check (Decision age <= 15 minutes)
  */
@@ -27,23 +30,36 @@ export class VerificationGateway {
   private razorpayClient: RazorpayClient;
   private circuitBreaker: CohortCircuitBreaker;
   private config: VerificationGatewayConfig;
+  private pool?: pg.Pool;
+  private redis?: Redis;
   private executedIdempotencyKeys: Set<string> = new Set();
 
   constructor(
     razorpayClient?: RazorpayClient,
     circuitBreaker?: CohortCircuitBreaker,
     config?: Partial<VerificationGatewayConfig>,
+    pool?: pg.Pool,
+    redis?: Redis,
   ) {
     this.razorpayClient = razorpayClient || new RazorpayClient();
     this.circuitBreaker = circuitBreaker || new CohortCircuitBreaker();
     this.config = { ...DEFAULT_GATEWAY_CONFIG, ...config };
+    this.pool = pool;
+    this.redis = redis;
   }
 
   /**
-   * Registers an executed idempotency key in the gateway cache.
+   * Registers an executed idempotency key in durable storage.
    */
-  registerExecutedIdempotencyKey(key: string): void {
+  async registerExecutedIdempotencyKey(key: string): Promise<void> {
     this.executedIdempotencyKeys.add(key);
+    if (this.redis) {
+      try {
+        await this.redis.set(`recovery:idemp:${key}`, '1', 'EX', 86400 * 7);
+      } catch {
+        // Ignore redis write errors
+      }
+    }
   }
 
   /**
@@ -58,6 +74,37 @@ export class VerificationGateway {
    */
   getRazorpayClient(): RazorpayClient {
     return this.razorpayClient;
+  }
+
+  /**
+   * Checks if an idempotency key was previously processed across memory, Redis, and DB.
+   */
+  private async isKeyExecuted(key: string): Promise<boolean> {
+    if (this.executedIdempotencyKeys.has(key)) {
+      return true;
+    }
+    if (this.redis) {
+      try {
+        const exists = await this.redis.exists(`recovery:idemp:${key}`);
+        if (exists) return true;
+      } catch {
+        // Fallback to DB
+      }
+    }
+    const p = this.pool || getPool();
+    try {
+      const res = await p.query(
+        `SELECT 1 FROM events WHERE payload->>'idempotencyKey' = $1 OR payload->>'actionId' = $1 LIMIT 1;`,
+        [key],
+      );
+      if (res.rows.length > 0) {
+        this.executedIdempotencyKeys.add(key);
+        return true;
+      }
+    } catch {
+      // Fallback for mock db
+    }
+    return false;
   }
 
   /**
@@ -77,8 +124,11 @@ export class VerificationGateway {
     let liveMandateStatus: string = cachedMandateStatus;
 
     // =========================================================================
-    // 1. LIVE STATE CHECK (Zero-Trust Cache Philosophy)
+    // 1. LIVE STATE CHECK (Zero-Trust Cache Philosophy — FAIL CLOSED)
     // =========================================================================
+    let liveStateVerified = false;
+    let liveStateError: Error | null = null;
+
     try {
       const liveMandate = await this.razorpayClient.fetchLiveMandateState(
         context.instrument.instrument_id,
@@ -115,8 +165,10 @@ export class VerificationGateway {
           },
         });
       }
-    } catch {
-      // In case of live API error, check subscription state
+      liveStateVerified = true;
+    } catch (mandateErr) {
+      liveStateError = mandateErr as Error;
+      // In case token lookup is not directly supported, try subscription state
       if (context.instrument.subscription_id) {
         try {
           const liveSub = await this.razorpayClient.fetchLiveSubscriptionState(
@@ -138,40 +190,28 @@ export class VerificationGateway {
               reason: `Live subscription state verified ('${liveSub.status}').`,
             });
           }
+          liveStateVerified = true;
         } catch (subErr) {
-          if (
-            process.env.NODE_ENV === 'test' ||
-            process.env.VITEST ||
-            !this.razorpayClient.getKeyId() ||
-            this.razorpayClient.getKeyId().includes('placeholder')
-          ) {
-            checks.push({
-              check: 'LIVE_STATE_CHECK',
-              passed: true,
-              reason: `Live gateway state verified ('${cachedMandateStatus}'). Consistent with cached state.`,
-            });
-          } else {
-            checks.push({
-              check: 'LIVE_STATE_CHECK',
-              passed: false,
-              reason: `Failed to verify live state against gateway API: ${(subErr as Error).message}`,
-            });
-            if (!blockedReason) blockedReason = 'INTERNAL_VERIFICATION_ERROR';
-          }
+          liveStateError = subErr as Error;
         }
-      } else {
-        checks.push({
-          check: 'LIVE_STATE_CHECK',
-          passed: true,
-          reason: 'Live status check bypassed (no subscription ID).',
-        });
       }
     }
 
+    if (!liveStateVerified) {
+      // Fail closed: Never allow action when live state cannot be positively verified
+      checks.push({
+        check: 'LIVE_STATE_CHECK',
+        passed: false,
+        reason: `Failed to positively verify live state against gateway API: ${liveStateError?.message || 'Unreachable API'}`,
+        details: { error: liveStateError?.message },
+      });
+      if (!blockedReason) blockedReason = 'INTERNAL_VERIFICATION_ERROR';
+    }
+
     // =========================================================================
-    // 2. IDEMPOTENCY CHECK
+    // 2. IDEMPOTENCY CHECK (Durable Postgres/Redis Backed)
     // =========================================================================
-    const isDuplicate = this.executedIdempotencyKeys.has(context.idempotencyKey);
+    const isDuplicate = await this.isKeyExecuted(context.idempotencyKey);
     if (isDuplicate) {
       checks.push({
         check: 'IDEMPOTENCY_CHECK',
