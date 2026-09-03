@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import type { DecisionTrace } from '@recovery/shared';
 
+import { getFallbackDecisionTrace } from '../lib/fallbackData.js';
+
 interface DecisionTraceModalProps {
   subscriptionId: string | null;
   onClose: () => void;
@@ -42,15 +44,18 @@ export const DecisionTraceModal: React.FC<DecisionTraceModalProps> = ({
       setError(null);
       try {
         const res = await fetch(`/api/audit/decision-trace/${subscriptionId}`);
-        const data = await res.json();
-        if (data.success) {
-          setTrace(data.data);
-        } else {
-          setError(data.error || 'Failed to fetch decision trace');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            setTrace(data.data);
+            return;
+          }
         }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Error fetching decision trace';
-        setError(msg);
+        // Fallback for standalone hosted preview
+        setTrace(getFallbackDecisionTrace(subscriptionId));
+      } catch {
+        // Fallback for standalone hosted preview
+        setTrace(getFallbackDecisionTrace(subscriptionId));
       } finally {
         setLoading(false);
       }
