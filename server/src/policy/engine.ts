@@ -181,7 +181,10 @@ export function decide(
       ? config.rails.upi_autopay.categoryAfaThresholdPaise
       : config.rails.upi_autopay.standardAfaThresholdPaise;
 
-    if (context.amountPaise > threshold && context.proposedAction === 'retry') {
+    if (
+      context.amountPaise > threshold &&
+      (context.proposedAction === 'retry' || context.proposedAction === 'schedule_retry')
+    ) {
       return {
         result: 'MODIFY',
         finalAction: 'proactive_nudge',

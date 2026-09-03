@@ -72,7 +72,13 @@ export function evaluateInstrumentHealth(
 
       const payload = event.payload as unknown as RazorpayWebhookPayload;
       const payment = payload?.payload?.payment?.entity;
-      const errorCode = payment?.error_code || 'UNKNOWN_ERROR';
+      const rawPayload = event.payload as Record<string, unknown>;
+      const errorCode =
+        payment?.error_code ||
+        (rawPayload?.error_code as string) ||
+        (rawPayload?.decline_code as string) ||
+        (rawPayload?.code as string) ||
+        'UNKNOWN_ERROR';
 
       declineCodeDistribution[errorCode] = (declineCodeDistribution[errorCode] || 0) + 1;
 
@@ -81,7 +87,11 @@ export function evaluateInstrumentHealth(
         errorCode === 'HARD_DECLINE_FRAUD_BLOCK' ||
         errorCode === 'ACCOUNT_BLOCKED' ||
         errorCode === 'MAX_RETRIES_EXCEEDED' ||
-        errorCode === 'EXPIRED_CARD'
+        errorCode === 'EXPIRED_CARD' ||
+        errorCode === 'CARD_EXPIRED' ||
+        errorCode === 'MANDATE_INACTIVE' ||
+        errorCode === 'MANDATE_CANCELLED' ||
+        errorCode === 'ACCOUNT_CLOSED'
       ) {
         hasHardDecline = true;
       }
