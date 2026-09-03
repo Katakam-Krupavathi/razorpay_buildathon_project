@@ -62,7 +62,8 @@ function createInMemoryDatabase(): MemoryDatabaseSetup {
       event_type VARCHAR(100) NOT NULL,
       payload JSONB NOT NULL DEFAULT '{}',
       actor event_actor NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      razorpay_event_id VARCHAR(255) NULL
     );
 
     CREATE TABLE health_snapshots (

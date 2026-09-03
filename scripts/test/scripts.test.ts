@@ -23,7 +23,7 @@ describe('Scripts Sanity and Synthetic Seeding Test', () => {
     db.public.none(`
       CREATE TYPE instrument_rail AS ENUM ('card', 'upi_autopay', 'enach');
       CREATE TYPE mandate_status AS ENUM ('active', 'paused', 'revoked', 'expired');
-      CREATE TYPE subscription_status AS ENUM ('authenticated', 'activated', 'active', 'pending', 'halted', 'paused', 'resumed', 'completed', 'cancelled');
+      CREATE TYPE subscription_status AS ENUM ('created', 'authenticated', 'activated', 'active', 'pending', 'halted', 'paused', 'resumed', 'completed', 'cancelled', 'expired');
       CREATE TYPE event_actor AS ENUM ('razorpay_webhook', 'health_scorer', 'recovery_planner', 'policy_engine', 'circuit_breaker', 'verification_gateway', 'execution_engine', 'human');
 
       CREATE TABLE events (
@@ -36,7 +36,8 @@ describe('Scripts Sanity and Synthetic Seeding Test', () => {
         event_type VARCHAR(100) NOT NULL,
         payload JSONB NOT NULL DEFAULT '{}',
         actor event_actor NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        razorpay_event_id VARCHAR(255) NULL
       );
     `);
 
