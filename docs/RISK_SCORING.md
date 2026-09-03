@@ -100,3 +100,7 @@ Every score persists an explicit `feature_vector` in `health_snapshots`:
   "issuer_prior": 0.82
 }
 ```
+
+### Feature Definitions & Assumed Baseline Priors:
+- `issuer_prior`: Assumed industry baseline recovery priors per payment rail (UPI AutoPay: 88%, Cards: 82%, eNACH: 75%).
+- `AiReasoningEngine`: Clinical diagnostic narratives are generated dynamically from this 11-dimension feature vector (with optional LLM synthesis when API keys are configured and deterministic grounded fallback), ensuring 100% explainability without granting execution authority to the AI.

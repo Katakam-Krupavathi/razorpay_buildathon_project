@@ -259,6 +259,8 @@ export function evaluateInstrumentHealth(
     is_over_afa_threshold: isOverAfaThreshold,
     mandate_status: instrument.mandate_status,
     last_event_type: lastEventType,
+    // Assumed industry baseline recovery priors per payment rail:
+    // UPI AutoPay: 88% success prior, Credit/Debit Cards: 82% success prior, eNACH: 75% success prior.
     issuer_prior:
       instrument.rail === 'upi_autopay' ? 0.88 : instrument.rail === 'card' ? 0.82 : 0.75,
   };

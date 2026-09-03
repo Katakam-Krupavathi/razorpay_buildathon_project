@@ -5,6 +5,8 @@ import path from 'node:path';
 describe('Architectural Boundary Guard: Zero Execution Authority in Planner', () => {
   const plannerDir = path.resolve(process.cwd(), 'src/planner');
 
+  // Note: This is a regex-based static architectural guard, not a full AST/dependency-graph tool.
+  // Dynamic runtime imports could theoretically bypass static text analysis; production builds enforce strict ESM static module graphs.
   // Forbidden patterns that violate the zero-execution boundary
   const FORBIDDEN_IMPORT_PATTERNS = [
     /from\s+['"].*\/razorpay\/client(\.js)?['"]/,
