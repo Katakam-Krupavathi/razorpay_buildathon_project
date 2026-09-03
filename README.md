@@ -149,8 +149,9 @@ npm run pipeline:batch
 ```bash
 npm run dev
 ```
-- **Dashboard UI**: [http://localhost:5173](http://localhost:5173)
-- **API Server**: [http://localhost:4000](http://localhost:4000)
+- **Live Production Dashboard (Vercel)**: **[https://buildathon-bice.vercel.app](https://buildathon-bice.vercel.app)** *(No local server required to view!)*
+- **Local Dev Dashboard**: [http://localhost:5173](http://localhost:5173) *(Active when running `npm run dev` locally)*
+- **Local API Server**: [http://localhost:4000](http://localhost:4000)
 
 ---
 
