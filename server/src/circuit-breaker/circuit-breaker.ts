@@ -7,6 +7,7 @@ import type {
   CircuitBreakerEvaluation,
 } from './types.js';
 import { EventStore } from '../event-store/event-store.js';
+import type { Redis } from 'ioredis';
 
 export const DEFAULT_CIRCUIT_BREAKER_CONFIG: CircuitBreakerConfig = {
   windowSize: 20,
@@ -30,15 +31,22 @@ interface CohortInternalState {
  *
  * Tracks success/failure outcomes per payment rail or issuer cohort.
  * When success rate falls below threshold, trips exactly once and intercepts downstream recovery actions.
+ * Backed by Redis with in-memory fast caching.
  */
 export class CohortCircuitBreaker {
   private config: CircuitBreakerConfig;
   private cohorts: Map<string, CohortInternalState> = new Map();
   private eventStore?: EventStore;
+  private redis?: Redis;
 
-  constructor(eventStore?: EventStore, config?: Partial<CircuitBreakerConfig>) {
+  constructor(
+    eventStore?: EventStore,
+    config?: Partial<CircuitBreakerConfig>,
+    redis?: Redis,
+  ) {
     this.eventStore = eventStore;
     this.config = { ...DEFAULT_CIRCUIT_BREAKER_CONFIG, ...config };
+    this.redis = redis;
   }
 
   private getOrCreateCohort(cohortKey: string): CohortInternalState {
@@ -136,12 +144,31 @@ export class CohortCircuitBreaker {
       }
     }
 
+    if (this.redis) {
+      this.syncToRedis(cohort).catch(() => {});
+    }
+
     return {
       state: cohort.state,
       trippedNow,
       successRate: currentSuccessRate,
       status: this.getStatus(cohortKey, new Date(ts)),
     };
+  }
+
+  private async syncToRedis(cohort: CohortInternalState): Promise<void> {
+    if (this.redis) {
+      try {
+        await this.redis.set(
+          `recovery:circuit_breaker:${cohort.cohortKey}`,
+          JSON.stringify(cohort),
+          'EX',
+          86400,
+        );
+      } catch {
+        // Fall back gracefully to in-memory state
+      }
+    }
   }
 
   /**
@@ -229,6 +256,10 @@ export class CohortCircuitBreaker {
         },
         createdAt: now,
       });
+    }
+
+    if (this.redis) {
+      this.syncToRedis(cohort).catch(() => {});
     }
 
     return this.getStatus(cohortKey, new Date(now));
