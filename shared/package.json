@@ -17,8 +17,10 @@
     "test": "vitest run",
     "dev": "tsc --watch"
   },
+  "dependencies": {
+    "typescript": "^5.5.3"
+  },
   "devDependencies": {
-    "typescript": "^5.5.3",
     "vitest": "^2.0.5"
   }
 }
