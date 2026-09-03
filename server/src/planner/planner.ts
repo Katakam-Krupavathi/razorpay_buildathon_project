@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import type { ProposedActionRecord, PlannerActionType } from '@recovery/shared';
 import type { PlannerContext, PlannerOptions } from './types.js';
+import { aiReasoningEngine } from './reasoning-engine.js';
 
 /**
  * Pure AI Recovery Planner Engine.
@@ -162,7 +163,18 @@ export function formulateRecoveryPlan(
   // 8. Fallback Default
   else {
     proposedAction = 'schedule_retry';
-    reasoning = `Unclassified degradation (Health score: ${health.healthScore.toFixed(2)}). Scheduling standard retry attempt.`;
+    reasoning = aiReasoningEngine.generateDeterministicNarration({
+      instrumentId: instrument.instrument_id,
+      rail: instrument.rail,
+      ltvTier,
+      healthScore: health.healthScore,
+      trajectory: health.trajectory,
+      rootCause: health.rootCause,
+      proposedAction,
+      expectedRecoveryValueRupees: ervRupees,
+      monthlyAmountRupees,
+      featureVector: fv,
+    });
     confidence = 0.6;
   }
 
