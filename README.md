@@ -206,13 +206,17 @@ npm run build
 
 ## ⚠️ Known Limitations
 
-1. **Authentication & Access Control (Hackathon Scope)**:
-   - User authentication and role-based access control (RBAC) are out of scope for this hackathon-scale prototype and demo artifact.
-   - For enterprise production deployments, standard OpenID Connect (OIDC) / SAML 2.0 and fine-grained API Gateway token validation should be placed in front of the Fastify server and React dashboard.
-2. **Razorpay Live vs Test Sandbox**:
-   - The engine integrates with Razorpay Test Mode with webhook signature validation and simulated live mandate status overrides for signature 2 AM safety demonstrations.
-3. **Notification Channels**:
-   - Customer dunning notifications (WhatsApp/SMS/Email) currently log through a structured channel abstraction; in production, SMS/WhatsApp gateways (e.g. Gupshup/Twilio) connect directly to this abstraction.
+1. **Razorpay Live API Integration & Test Execution Simulation**:
+   - When active Razorpay API keys (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) are provided, live REST API calls and webhooks are ingested.
+   - With default placeholder keys, money-moving execution actions (`chargeSubscription`, `pauseSubscription`) run through a clearly labeled local simulation path so evaluators can run the demo cold without credentials.
+   - However, pre-action **Verification Gateway** checks strictly fail closed: any failure to positively verify live mandate/subscription state returns `BLOCK / INTERNAL_VERIFICATION_ERROR` (zero silent passes).
+2. **Redis-Backed Circuit Breakers & Distributed State**:
+   - Cohort circuit breaker states and execution idempotency tracking are backed by real Redis (`ioredis`) and PostgreSQL, with in-process fast memory caching for ultra-low latency.
+3. **AI Narrative Reasoning & Zero Execution Authority**:
+   - Clinical diagnostic reasoning strings are synthesized via `AiReasoningEngine`, grounded strictly in the 11-dimension `RiskFeatureVector` (with optional LLM integration when `GEMINI_API_KEY` / `OPENAI_API_KEY` is present and deterministic local synthesis fallback).
+   - In accordance with the project's core safety thesis (*"AI predicts, Policy permits, Verification checks, Execution acts"*), the AI possesses structural Zero Execution Authority and cannot directly trigger charges, pause mandates, or bypass policy rules.
+4. **Authentication & Notification Delivery**:
+   - User authentication (RBAC) and external SMS/WhatsApp delivery (Twilio/Gupshup) use structured abstractions suitable for prototype evaluation, ready to be wired to enterprise IdPs and SMS aggregators in production.
 
 ---
 
