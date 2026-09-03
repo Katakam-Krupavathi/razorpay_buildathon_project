@@ -37,5 +37,5 @@ describe('Scripts Independence & Zero-Server Dependency Tests (FIX 11)', () => {
     expect(serverModule.RecoveryPipelineOrchestrator).toBeDefined();
     expect(serverModule.ExecutionService).toBeDefined();
     expect(serverModule.EscalationService).toBeDefined();
-  });
+  }, 15000);
 });

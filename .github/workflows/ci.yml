@@ -17,6 +17,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: recovery_control_plane
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
         options: >-
@@ -54,8 +55,15 @@ jobs:
       - name: Build packages
         run: npm run build
 
+      - name: Apply database migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5432/recovery_control_plane?schema=public'
+
       - name: Run test suite
         run: npm test
         env:
-          DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/recovery_control_plane?schema=public'
-          REDIS_URL: 'redis://localhost:6379'
+          DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5432/recovery_control_plane?schema=public'
+          REDIS_URL: 'redis://127.0.0.1:6379'
+          NODE_ENV: 'test'
+          AI_REASONING_ENABLED: 'false'

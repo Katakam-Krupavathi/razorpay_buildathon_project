@@ -314,11 +314,11 @@ describe('Fixes Verification Suite (FIX 12 to FIX 19)', () => {
         },
       };
 
-      const cb1 = new CohortCircuitBreaker(undefined, { minSamples: 1 }, mockRedis as any);
+      const cb1 = new CohortCircuitBreaker(undefined, { minSamples: 1 }, mockRedis as unknown as import('ioredis').Redis);
       await cb1.recordOutcome('rail:card', false);
 
       // Create a fresh instance (simulating server restart or separate instance)
-      const cb2 = new CohortCircuitBreaker(undefined, { minSamples: 1 }, mockRedis as any);
+      const cb2 = new CohortCircuitBreaker(undefined, { minSamples: 1 }, mockRedis as unknown as import('ioredis').Redis);
       const restoredState = await cb2.restoreFromRedis('rail:card');
 
       expect(restoredState).not.toBeNull();
