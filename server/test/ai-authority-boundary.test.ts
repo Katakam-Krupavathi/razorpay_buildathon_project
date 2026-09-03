@@ -297,4 +297,114 @@ describe('Fixes Verification Suite (FIX 12 to FIX 19)', () => {
       expect(lastRes.trippedNow).toBe(true);
     });
   });
+
+  // ===========================================================================
+  // FIX 21: Redis Circuit Breaker Restoration Across Instances
+  // ===========================================================================
+  describe('FIX 21: Redis Circuit Breaker State Restoration', () => {
+    it('21.1 should restore tripped cohort state when initializing from mock/redis storage', async () => {
+      const mockRedis = {
+        store: new Map<string, string>(),
+        async get(key: string) {
+          return this.store.get(key) || null;
+        },
+        async set(key: string, val: string) {
+          this.store.set(key, val);
+          return 'OK';
+        },
+      };
+
+      const cb1 = new CohortCircuitBreaker(undefined, { minSamples: 1 }, mockRedis as any);
+      await cb1.recordOutcome('rail:card', false);
+
+      // Create a fresh instance (simulating server restart or separate instance)
+      const cb2 = new CohortCircuitBreaker(undefined, { minSamples: 1 }, mockRedis as any);
+      const restoredState = await cb2.restoreFromRedis('rail:card');
+
+      expect(restoredState).not.toBeNull();
+      expect(restoredState?.cohortKey).toBe('rail:card');
+    });
+  });
+
+  // ===========================================================================
+  // FIX 28 & FIX 29: AI Structured Output Validation & Safe Fallback
+  // ===========================================================================
+  describe('FIX 28 & FIX 29: AI Structured Output Validation & Failure Safety', () => {
+    it('28.1 should validate and sanitize valid LLM structured output', async () => {
+      const { validateAiDiagnosticOutput } = await import('../src/ai/llm-client.js');
+      const fallbackInput = {
+        instrumentId: 'inst_test',
+        rail: 'card' as const,
+        ltvTier: 'high',
+        healthScore: 0.45,
+        trajectory: 'DEGRADING',
+        rootCause: 'CARD_EXPIRY_RISK',
+        proposedAction: 'proactive_nudge',
+        expectedRecoveryValueRupees: 5000,
+        monthlyAmountRupees: 6000,
+        featureVector: {
+          failure_count_last_3_cycles: 0,
+          success_count_total: 6,
+          consecutive_failures: 0,
+          days_to_expiry: 12,
+          days_to_expiry_normalized: 0.6,
+          is_near_card_expiry: true,
+          decline_code_distribution: {},
+          is_over_afa_threshold: false,
+          mandate_status: 'active' as const,
+          last_event_type: 'subscription.charged',
+          issuer_prior: 0.82,
+        },
+      };
+
+      const rawLlmOutput = {
+        diagnosis: 'Card expiry is in 12 days. Proactive token update recommended.',
+        root_cause: 'CARD_EXPIRY_RISK',
+        risk: 'DEGRADING',
+        recommendation: 'proactive_nudge',
+        confidence: 0.95,
+        evidence_event_ids: ['evt_1', 'evt_2'],
+      };
+
+      const validated = validateAiDiagnosticOutput(rawLlmOutput, fallbackInput);
+      expect(validated).not.toBeNull();
+      expect(validated?.diagnosis).toContain('Card expiry is in 12 days');
+      expect(validated?.confidence).toBe(0.95);
+      expect(validated?.root_cause).toBe('CARD_EXPIRY_RISK');
+    });
+
+    it('29.1 should reject malformed or unsafe LLM output and fall back safely', async () => {
+      const { validateAiDiagnosticOutput } = await import('../src/ai/llm-client.js');
+      const fallbackInput = {
+        instrumentId: 'inst_test',
+        rail: 'card' as const,
+        ltvTier: 'high',
+        healthScore: 0.45,
+        trajectory: 'DEGRADING',
+        rootCause: 'CARD_EXPIRY_RISK',
+        proposedAction: 'proactive_nudge',
+        expectedRecoveryValueRupees: 5000,
+        monthlyAmountRupees: 6000,
+        featureVector: {
+          failure_count_last_3_cycles: 0,
+          success_count_total: 6,
+          consecutive_failures: 0,
+          days_to_expiry: 12,
+          days_to_expiry_normalized: 0.6,
+          is_near_card_expiry: true,
+          decline_code_distribution: {},
+          is_over_afa_threshold: false,
+          mandate_status: 'active' as const,
+          last_event_type: 'subscription.charged',
+          issuer_prior: 0.82,
+        },
+      };
+
+      // Invalid output missing diagnosis or non-object
+      expect(validateAiDiagnosticOutput(null, fallbackInput)).toBeNull();
+      expect(validateAiDiagnosticOutput({ invalid: true }, fallbackInput)).toBeNull();
+      expect(validateAiDiagnosticOutput('not json', fallbackInput)).toBeNull();
+    });
+  });
 });
+

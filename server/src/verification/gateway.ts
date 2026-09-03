@@ -49,9 +49,17 @@ export class VerificationGateway {
   }
 
   /**
-   * Registers an executed idempotency key in durable storage.
+   * Registers an executed idempotency key in durable storage (Postgres action_executions & Redis).
    */
-  async registerExecutedIdempotencyKey(key: string): Promise<void> {
+  async registerExecutedIdempotencyKey(
+    key: string,
+    details?: {
+      instrumentId?: string;
+      subscriptionId?: string;
+      action?: string;
+      metadata?: Record<string, unknown>;
+    },
+  ): Promise<void> {
     this.executedIdempotencyKeys.add(key);
     if (this.redis) {
       try {
@@ -59,6 +67,30 @@ export class VerificationGateway {
       } catch {
         // Ignore redis write errors
       }
+    }
+    const p = this.pool || getPool();
+    try {
+      await p.query(
+        `INSERT INTO action_executions (
+          execution_id,
+          idempotency_key,
+          instrument_id,
+          subscription_id,
+          action,
+          metadata
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (idempotency_key) DO NOTHING;`,
+        [
+          `exec_${crypto.randomUUID()}`,
+          key,
+          details?.instrumentId || 'inst_unknown',
+          details?.subscriptionId || null,
+          details?.action || 'unspecified',
+          JSON.stringify(details?.metadata || {}),
+        ],
+      );
+    } catch {
+      // Fallback for mock db
     }
   }
 
@@ -77,7 +109,7 @@ export class VerificationGateway {
   }
 
   /**
-   * Checks if an idempotency key was previously processed across memory, Redis, and DB.
+   * Checks if an idempotency key was previously processed across memory, Redis, and DB action_executions table.
    */
   private async isKeyExecuted(key: string): Promise<boolean> {
     if (this.executedIdempotencyKeys.has(key)) {
@@ -93,6 +125,17 @@ export class VerificationGateway {
     }
     const p = this.pool || getPool();
     try {
+      // 1. Check persistent action_executions table
+      const execRes = await p.query(
+        `SELECT 1 FROM action_executions WHERE idempotency_key = $1 LIMIT 1;`,
+        [key],
+      );
+      if (execRes.rows.length > 0) {
+        this.executedIdempotencyKeys.add(key);
+        return true;
+      }
+
+      // 2. Check historical events ledger
       const res = await p.query(
         `SELECT 1 FROM events WHERE payload->>'idempotencyKey' = $1 OR payload->>'actionId' = $1 LIMIT 1;`,
         [key],

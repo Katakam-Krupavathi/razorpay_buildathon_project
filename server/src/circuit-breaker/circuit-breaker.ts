@@ -67,6 +67,26 @@ export class CohortCircuitBreaker {
   }
 
   /**
+   * Restores cohort state from Redis if available.
+   */
+  async restoreFromRedis(cohortKey: string): Promise<CohortInternalState | null> {
+    if (!this.redis) return null;
+    try {
+      const raw = await this.redis.get(`recovery:circuit_breaker:${cohortKey}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CohortInternalState;
+        if (parsed && parsed.cohortKey === cohortKey) {
+          this.cohorts.set(cohortKey, parsed);
+          return parsed;
+        }
+      }
+    } catch {
+      // Fall back gracefully
+    }
+    return null;
+  }
+
+  /**
    * Records an automated recovery action's success/failure outcome.
    * If the rolling window success rate collapses below threshold, trips the breaker exactly once.
    */
@@ -80,6 +100,9 @@ export class CohortCircuitBreaker {
     successRate: number;
     status: CircuitBreakerStatus;
   }> {
+    if (this.redis && !this.cohorts.has(cohortKey)) {
+      await this.restoreFromRedis(cohortKey);
+    }
     const cohort = this.getOrCreateCohort(cohortKey);
     const ts = options?.timestamp || new Date().toISOString();
 
@@ -222,6 +245,26 @@ export class CohortCircuitBreaker {
           ? `Circuit breaker is OPEN for cohort '${cohortKey}' (${status.openReason}). Automated actions suspended; modifying to manual escalation.`
           : undefined,
     };
+  }
+
+  /**
+   * Asynchronously evaluates if actions targeting this cohort are allowed, syncing from Redis if uninitialized.
+   */
+  async evaluateAsync(cohortKey: string, now: Date = new Date()): Promise<CircuitBreakerEvaluation> {
+    if (this.redis && !this.cohorts.has(cohortKey)) {
+      await this.restoreFromRedis(cohortKey);
+    }
+    return this.evaluate(cohortKey, now);
+  }
+
+  /**
+   * Asynchronously retrieves status of a cohort, syncing from Redis if uninitialized.
+   */
+  async getStatusAsync(cohortKey: string, now: Date = new Date()): Promise<CircuitBreakerStatus> {
+    if (this.redis && !this.cohorts.has(cohortKey)) {
+      await this.restoreFromRedis(cohortKey);
+    }
+    return this.getStatus(cohortKey, now);
   }
 
   /**

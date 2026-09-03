@@ -33,6 +33,7 @@ export class EventStore {
       payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
       actor: row.actor,
       createdAt: normalizeTimestamp(row.created_at),
+      razorpayEventId: row.razorpay_event_id || null,
     };
   }
 
@@ -89,8 +90,9 @@ export class EventStore {
           event_type,
           payload,
           actor,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          created_at,
+          razorpay_event_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *;`,
         [
           eventId,
@@ -102,6 +104,7 @@ export class EventStore {
           JSON.stringify(input.payload),
           input.actor,
           createdAt,
+          input.razorpayEventId || null,
         ],
       );
 

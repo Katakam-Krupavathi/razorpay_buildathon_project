@@ -126,13 +126,24 @@ export class RecoveryPipelineOrchestrator {
     const proposedPlan = planResult.proposal;
 
     // [Stage 3] Deterministic Policy Engine ("PERMIT")
-    // Query event store for proactive nudges/contacts within the current billing cycle (last 30 days)
+    // Query event store for proactive nudges/contacts within the current true billing cycle
     let customerContactCountThisCycle = 0;
     try {
       const subEvents = await this.eventStore.getEventsForSubscription(
         instrument.subscription_id,
       );
-      const thirtyDaysAgo = new Date(refTime.getTime() - 30 * 86400 * 1000);
+      // Find latest charge/activation event to anchor current billing cycle
+      const cycleAnchorEvents = subEvents.filter((e) =>
+        ['subscription.charged', 'payment.authorized', 'subscription.activated'].includes(e.eventType) &&
+        new Date(e.createdAt) <= refTime,
+      );
+      const latestAnchor = cycleAnchorEvents.length > 0
+        ? cycleAnchorEvents[cycleAnchorEvents.length - 1]
+        : null;
+      const cycleStartTime = latestAnchor
+        ? new Date(latestAnchor.createdAt)
+        : new Date(refTime.getTime() - 30 * 86400 * 1000);
+
       customerContactCountThisCycle = subEvents.filter((e) => {
         const isNudge =
           e.eventType === 'proactive_nudge_sent' ||
@@ -140,7 +151,7 @@ export class RecoveryPipelineOrchestrator {
             ((e.payload as Record<string, unknown>)?.action === 'proactive_nudge' ||
               (e.payload as Record<string, unknown>)?.finalAction === 'proactive_nudge'));
         const eventTime = new Date(e.createdAt);
-        return isNudge && eventTime >= thirtyDaysAgo;
+        return isNudge && eventTime >= cycleStartTime && eventTime <= refTime;
       }).length;
     } catch {
       customerContactCountThisCycle = 0;

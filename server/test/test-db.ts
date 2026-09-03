@@ -28,7 +28,7 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   db.public.none(`
     CREATE TYPE instrument_rail AS ENUM ('card', 'upi_autopay', 'enach');
     CREATE TYPE mandate_status AS ENUM ('active', 'paused', 'revoked', 'expired');
-    CREATE TYPE subscription_status AS ENUM ('authenticated', 'activated', 'active', 'pending', 'halted', 'paused', 'resumed', 'completed', 'cancelled');
+    CREATE TYPE subscription_status AS ENUM ('created', 'authenticated', 'activated', 'active', 'pending', 'halted', 'paused', 'resumed', 'completed', 'cancelled', 'expired');
     CREATE TYPE event_actor AS ENUM ('razorpay_webhook', 'health_scorer', 'recovery_planner', 'policy_engine', 'circuit_breaker', 'verification_gateway', 'execution_engine', 'human');
   `);
 
@@ -66,7 +66,19 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       event_type VARCHAR(100) NOT NULL,
       payload JSONB NOT NULL DEFAULT '{}',
       actor event_actor NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      razorpay_event_id VARCHAR(255) NULL UNIQUE
+    );
+
+    CREATE TABLE action_executions (
+      execution_id VARCHAR(255) PRIMARY KEY,
+      idempotency_key VARCHAR(255) UNIQUE NOT NULL,
+      instrument_id VARCHAR(255) NOT NULL,
+      subscription_id VARCHAR(255) NULL,
+      action VARCHAR(100) NOT NULL,
+      status VARCHAR(50) NOT NULL DEFAULT 'executed',
+      executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      metadata JSONB NOT NULL DEFAULT '{}'
     );
 
     CREATE TABLE health_snapshots (

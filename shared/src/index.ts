@@ -65,6 +65,7 @@ export interface DbEvent<T = Record<string, unknown>> {
   payload: T;
   actor: EventActor;
   created_at: string;
+  razorpay_event_id?: string | null;
 }
 
 export interface DbHealthSnapshot {
@@ -127,6 +128,7 @@ export interface CreateEventInput<T = Record<string, unknown>> {
   payload: T;
   actor: EventActor;
   createdAt?: string | Date;
+  razorpayEventId?: string | null;
 }
 
 export interface StoredEvent<T = Record<string, unknown>> {
@@ -140,6 +142,7 @@ export interface StoredEvent<T = Record<string, unknown>> {
   payload: T;
   actor: EventActor;
   createdAt: string;
+  razorpayEventId?: string | null;
 }
 
 export interface ChainIntegrityResult {

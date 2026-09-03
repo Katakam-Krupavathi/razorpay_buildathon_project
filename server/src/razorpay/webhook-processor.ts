@@ -132,7 +132,7 @@ export class WebhookProcessor {
     if (uniqueWebhookId) {
       try {
         const existing = await this.pool.query<{ event_id: string }>(
-          `SELECT event_id FROM events WHERE payload->>'x_razorpay_event_id' = $1 OR payload->>'event_id' = $1 OR event_id = $1 LIMIT 1;`,
+          `SELECT event_id FROM events WHERE razorpay_event_id = $1 OR payload->>'x_razorpay_event_id' = $1 OR payload->>'event_id' = $1 OR event_id = $1 LIMIT 1;`,
           [uniqueWebhookId],
         );
         if (existing.rows.length > 0) {
@@ -158,37 +158,54 @@ export class WebhookProcessor {
       ? ({ ...payload, x_razorpay_event_id: uniqueWebhookId } as unknown as RazorpayWebhookPayload)
       : payload;
 
-    // 1. Append to the immutable, hash-chained event store
-    const storedEvent = await this.eventStore.appendEvent<RazorpayWebhookPayload>({
-      subscriptionId,
-      instrumentId,
-      eventType: payload.event,
-      actor: 'razorpay_webhook',
-      payload: payloadToStore,
-      createdAt: eventTimestamp,
-    });
-
+    const client = await this.pool.connect();
+    let storedEvent: StoredEvent<RazorpayWebhookPayload>;
     let isProjected = false;
 
-    // 2. Materialize / project state into subscriptions table with out-of-order protection
-    if (subscriptionId && mappedStatus) {
-      await this.pool.query(
-        `INSERT INTO subscriptions (
-          subscription_id,
-          customer_id,
-          plan_id,
-          status,
-          current_instrument_id,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $6)
-        ON CONFLICT (subscription_id) DO UPDATE
-        SET status = CASE WHEN subscriptions.updated_at <= EXCLUDED.updated_at THEN EXCLUDED.status ELSE subscriptions.status END,
-            current_instrument_id = COALESCE(EXCLUDED.current_instrument_id, subscriptions.current_instrument_id),
-            updated_at = CASE WHEN subscriptions.updated_at <= EXCLUDED.updated_at THEN EXCLUDED.updated_at ELSE subscriptions.updated_at END;`,
-        [subscriptionId, customerId, planId, mappedStatus, instrumentId, eventTimestamp],
+    try {
+      await client.query('BEGIN');
+
+      // 1. Append to the immutable, hash-chained event store
+      storedEvent = await this.eventStore.appendEvent<RazorpayWebhookPayload>(
+        {
+          subscriptionId,
+          instrumentId,
+          eventType: payload.event,
+          actor: 'razorpay_webhook',
+          payload: payloadToStore,
+          createdAt: eventTimestamp,
+          razorpayEventId: uniqueWebhookId || undefined,
+        },
+        client,
       );
-      isProjected = true;
+
+      // 2. Materialize / project state into subscriptions table with out-of-order protection
+      if (subscriptionId && mappedStatus) {
+        await client.query(
+          `INSERT INTO subscriptions (
+            subscription_id,
+            customer_id,
+            plan_id,
+            status,
+            current_instrument_id,
+            created_at,
+            updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $6)
+          ON CONFLICT (subscription_id) DO UPDATE
+          SET status = CASE WHEN subscriptions.updated_at <= EXCLUDED.updated_at THEN EXCLUDED.status ELSE subscriptions.status END,
+              current_instrument_id = COALESCE(EXCLUDED.current_instrument_id, subscriptions.current_instrument_id),
+              updated_at = CASE WHEN subscriptions.updated_at <= EXCLUDED.updated_at THEN EXCLUDED.updated_at ELSE subscriptions.updated_at END;`,
+          [subscriptionId, customerId, planId, mappedStatus, instrumentId, eventTimestamp],
+        );
+        isProjected = true;
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
 
     return {

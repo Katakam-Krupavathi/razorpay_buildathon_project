@@ -20,6 +20,7 @@ END $$;
 
 DO $$ BEGIN
     CREATE TYPE subscription_status AS ENUM (
+        'created',
         'authenticated',
         'activated',
         'active',
@@ -28,7 +29,8 @@ DO $$ BEGIN
         'paused',
         'resumed',
         'completed',
-        'cancelled'
+        'cancelled',
+        'expired'
     );
 EXCEPTION
     WHEN duplicate_object THEN null;
