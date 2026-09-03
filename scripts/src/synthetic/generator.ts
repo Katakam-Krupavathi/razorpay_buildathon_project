@@ -46,7 +46,7 @@ export class SyntheticDataGenerator {
 
   constructor(options?: GeneratorOptions) {
     this.seed = options?.seed ?? 42;
-    this.baseTimestamp = options?.baseTimestamp ?? 1770000000000;
+    this.baseTimestamp = options?.baseTimestamp ?? Date.now();
     this.prng = new PRNG(this.seed);
   }
 

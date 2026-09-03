@@ -135,8 +135,50 @@ export class SyntheticDataSeeder {
       eventsAppended++;
     }
 
-    // 3. Degrading / Terminal Failure Lifecycle Events
-    if (spec.healthProfile === 'DEGRADING') {
+    // 3. Degrading / Terminal / AFA Over Threshold Lifecycle Events
+    if (spec.isOverAfaThreshold && spec.healthProfile !== 'TERMINAL') {
+      const failureTime = Date.now() - 3600 * 1000; // 1 hour ago
+      const pendingPayload: RazorpayWebhookPayload = {
+        entity: 'event',
+        account_id: 'acc_synthetic_core',
+        event: 'subscription.pending',
+        contains: ['subscription', 'payment'],
+        payload: {
+          subscription: {
+            entity: {
+              id: spec.subscriptionId,
+              plan_id: spec.planId,
+              customer_id: spec.customerId,
+              token_id: spec.instrumentId,
+              status: 'pending',
+            },
+          },
+          payment: {
+            entity: {
+              id: `pay_synth_${spec.index}_afa_pending`,
+              amount: spec.monthlyAmount,
+              currency: 'INR',
+              status: 'failed',
+              error_code: 'MANDATE_LIMIT_EXCEEDED',
+              error_description: `Transaction amount ₹${spec.monthlyAmount / 100} exceeds RBI AFA limit`,
+              method: spec.rail,
+              token_id: spec.instrumentId,
+            },
+          },
+        },
+        created_at: Math.floor(failureTime / 1000),
+      };
+
+      await this.eventStore.appendEvent({
+        subscriptionId: spec.subscriptionId,
+        instrumentId: spec.instrumentId,
+        eventType: 'subscription.pending',
+        actor: 'razorpay_webhook',
+        payload: pendingPayload,
+        createdAt: new Date(failureTime).toISOString(),
+      });
+      eventsAppended++;
+    } else if (spec.healthProfile === 'DEGRADING') {
       const failureTime = Date.now() - 3600 * 1000; // 1 hour ago
       const pendingPayload: RazorpayWebhookPayload = {
         entity: 'event',
