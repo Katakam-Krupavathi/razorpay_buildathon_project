@@ -41,25 +41,27 @@ export const webhookRoutes: FastifyPluginAsync<WebhookRouteOptions> = async (fas
         });
       }
 
-      // 2. Ingest and project webhook
+      // 2. Ingest and project webhook with durable idempotency
       try {
-        const result = await processor.processWebhook(request.body);
+        const webhookEventId = request.headers['x-razorpay-event-id'] as string | undefined;
+        const result = await processor.processWebhook(request.body, { webhookEventId });
         request.log.info(
           {
             event: request.body.event,
             subscriptionId: result.subscriptionId,
             status: result.status,
-            sequenceNumber: result.event.sequenceNumber,
+            sequenceNumber: result.event?.sequenceNumber,
           },
           'Razorpay webhook successfully ingested and projected to event store',
         );
 
         return reply.status(200).send({
           success: true,
-          eventId: result.event.eventId,
-          sequenceNumber: result.event.sequenceNumber,
+          eventId: result.event?.eventId || 'duplicate_acknowledged',
+          sequenceNumber: result.event?.sequenceNumber ?? null,
           subscriptionId: result.subscriptionId,
           status: result.status,
+          isDuplicate: !result.isProjected,
         });
       } catch (error) {
         request.log.error(error, 'Error processing Razorpay webhook payload');

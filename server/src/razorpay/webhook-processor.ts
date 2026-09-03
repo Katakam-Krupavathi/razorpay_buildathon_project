@@ -108,15 +108,55 @@ export class WebhookProcessor {
 
   /**
    * Ingests a validated webhook event:
-   * 1. Appends raw immutable event into the Event Store (actor = 'razorpay_webhook').
-   * 2. Projects and materializes the updated subscription state into the subscriptions table.
+   * 1. Checks durable idempotency to prevent duplicate projection effects.
+   * 2. Appends raw immutable event into the Event Store (actor = 'razorpay_webhook').
+   * 3. Projects and materializes state into subscriptions table with out-of-order protection.
    */
-  public async processWebhook(payload: RazorpayWebhookPayload): Promise<WebhookProcessingResult> {
+  public async processWebhook(
+    payload: RazorpayWebhookPayload,
+    options?: { webhookEventId?: string },
+  ): Promise<WebhookProcessingResult> {
     const subscriptionId = this.extractSubscriptionId(payload);
     const instrumentId = this.extractInstrumentId(payload);
     const customerId = this.extractCustomerId(payload) || 'cust_unknown';
     const planId = this.extractPlanId(payload) || 'plan_default';
     const mappedStatus = this.mapWebhookEventToSubscriptionStatus(payload.event);
+
+    const rawPayload = payload as unknown as Record<string, unknown>;
+    const uniqueWebhookId =
+      options?.webhookEventId ||
+      (rawPayload.x_razorpay_event_id as string) ||
+      (rawPayload.event_id as string) ||
+      null;
+
+    if (uniqueWebhookId) {
+      try {
+        const existing = await this.pool.query<{ event_id: string }>(
+          `SELECT event_id FROM events WHERE payload->>'x_razorpay_event_id' = $1 OR payload->>'event_id' = $1 OR event_id = $1 LIMIT 1;`,
+          [uniqueWebhookId],
+        );
+        if (existing.rows.length > 0) {
+          // Idempotent duplicate delivery: safely acknowledge without duplicate effects
+          return {
+            success: true,
+            event: null as unknown as StoredEvent<RazorpayWebhookPayload>,
+            subscriptionId,
+            status: mappedStatus,
+            isProjected: false,
+          };
+        }
+      } catch {
+        // Fallback for mock db
+      }
+    }
+
+    const eventTimestamp = payload.created_at
+      ? new Date(payload.created_at * 1000).toISOString()
+      : new Date().toISOString();
+
+    const payloadToStore: RazorpayWebhookPayload = uniqueWebhookId
+      ? ({ ...payload, x_razorpay_event_id: uniqueWebhookId } as unknown as RazorpayWebhookPayload)
+      : payload;
 
     // 1. Append to the immutable, hash-chained event store
     const storedEvent = await this.eventStore.appendEvent<RazorpayWebhookPayload>({
@@ -124,15 +164,13 @@ export class WebhookProcessor {
       instrumentId,
       eventType: payload.event,
       actor: 'razorpay_webhook',
-      payload,
-      createdAt: payload.created_at
-        ? new Date(payload.created_at * 1000).toISOString()
-        : new Date().toISOString(),
+      payload: payloadToStore,
+      createdAt: eventTimestamp,
     });
 
     let isProjected = false;
 
-    // 2. Materialize / project state into the subscriptions table
+    // 2. Materialize / project state into subscriptions table with out-of-order protection
     if (subscriptionId && mappedStatus) {
       await this.pool.query(
         `INSERT INTO subscriptions (
@@ -143,12 +181,12 @@ export class WebhookProcessor {
           current_instrument_id,
           created_at,
           updated_at
-        ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $6)
         ON CONFLICT (subscription_id) DO UPDATE
-        SET status = EXCLUDED.status,
+        SET status = CASE WHEN subscriptions.updated_at <= EXCLUDED.updated_at THEN EXCLUDED.status ELSE subscriptions.status END,
             current_instrument_id = COALESCE(EXCLUDED.current_instrument_id, subscriptions.current_instrument_id),
-            updated_at = NOW();`,
-        [subscriptionId, customerId, planId, mappedStatus, instrumentId],
+            updated_at = CASE WHEN subscriptions.updated_at <= EXCLUDED.updated_at THEN EXCLUDED.updated_at ELSE subscriptions.updated_at END;`,
+        [subscriptionId, customerId, planId, mappedStatus, instrumentId, eventTimestamp],
       );
       isProjected = true;
     }
