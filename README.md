@@ -110,16 +110,6 @@ Financial systems require absolute safety. This architecture enforces a **Zero E
 
 ---
 
-## 🌐 Live Deployment & Dashboard
-
-| Environment | URL | Details |
-| :--- | :--- | :--- |
-| **Production Dashboard (Vercel)** | **[https://buildathon-bice.vercel.app](https://buildathon-bice.vercel.app)** | Live hosted React 18 / Tailwind CSS control plane |
-| **Local Dashboard** | **`http://localhost:5173`** | Local Vite dev server |
-| **Local API Server** | **`http://localhost:4000`** | Fastify backend API & Webhook receiver |
-
----
-
 ## ⚡ Quickstart
 
 ### Prerequisites
