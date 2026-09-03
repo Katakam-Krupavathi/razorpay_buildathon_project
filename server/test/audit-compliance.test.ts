@@ -6,6 +6,8 @@ import { RecoveryPipelineOrchestrator } from '../src/pipeline/orchestrator.js';
 import { buildApp } from '../src/index.js';
 import { createTestDatabase, type TestPool } from './test-db.js';
 
+import { RazorpayClient } from '../src/razorpay/client.js';
+
 describe('Phase 11: Unified Decision Trace & Compliance Audit Suite', () => {
   let pool: TestPool;
   let cleanup: () => Promise<void>;
@@ -22,9 +24,11 @@ describe('Phase 11: Unified Decision Trace & Compliance Audit Suite', () => {
     decisionTraceService = new DecisionTraceService(pool, eventStore);
     complianceService = new ComplianceService(pool, eventStore);
     orchestrator = new RecoveryPipelineOrchestrator({ pool, eventStore });
+    RazorpayClient.clearSimulatedLiveOverrides();
   });
 
   afterEach(async () => {
+    RazorpayClient.clearSimulatedLiveOverrides();
     await cleanup();
   });
 
@@ -40,6 +44,9 @@ describe('Phase 11: Unified Decision Trace & Compliance Audit Suite', () => {
     const rail = overrides?.rail || 'card';
     const mandateStatus = overrides?.mandateStatus || 'active';
     const annualizedValue = overrides?.annualizedValue || 12000000;
+
+    RazorpayClient.setSimulatedLiveOverride(instId, { mandateStatus });
+    RazorpayClient.setSimulatedLiveOverride(subId, { subscriptionStatus: 'active' });
 
     await pool.query(
       `INSERT INTO subscriptions (subscription_id, customer_id, plan_id, status)

@@ -30,6 +30,30 @@ export class PolicyService {
   ): Promise<PolicyServiceResult> {
     const outcome = decide(context, customConfig);
     const decisionId = `dec_${crypto.randomUUID()}`;
+    const policyVersion = '1.0.0';
+    const policyHash = crypto
+      .createHash('sha256')
+      .update(JSON.stringify({ ruleId: outcome.ruleIdMatched, version: policyVersion }))
+      .digest('hex');
+
+    const parameters: Record<string, unknown> = {
+      ...(outcome.modifiedParameters || {}),
+      policyVersion,
+      policyHash,
+      ruleId: outcome.ruleIdMatched,
+      inputSnapshot: {
+        rail: context.rail,
+        trajectory: context.trajectory,
+        attemptCount: context.attemptCount,
+        proposedAction: context.proposedAction,
+        rootCause: context.rootCause,
+        expectedRecoveryValue: context.expectedRecoveryValue,
+        ltvTier: context.ltvTier,
+        customerContactCountThisCycle: context.customerContactCountThisCycle,
+        amountPaise: context.amountPaise,
+        evaluatedAt: context.evaluatedAt,
+      },
+    };
 
     const decisionRecord: PolicyDecisionRecord = {
       decisionId,
@@ -40,7 +64,7 @@ export class PolicyService {
       finalAction: outcome.finalAction,
       ruleIdMatched: outcome.ruleIdMatched,
       reason: outcome.reason,
-      parameters: outcome.modifiedParameters,
+      parameters,
       evaluatedAt: outcome.evaluatedAt,
     };
 

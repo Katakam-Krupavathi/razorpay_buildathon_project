@@ -72,6 +72,7 @@ describe('Phase 13: End-to-End Autonomous Control Loop Integration Tests', () =>
     );
     // Card with expiry in 14 days
     const nearExpiryDate = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();
+    RazorpayClient.setSimulatedLiveOverride('inst_nudge_e2e', { mandateStatus: 'active' });
     await pool.query(
       `INSERT INTO instruments (instrument_id, subscription_id, rail, mandate_status, annualized_value, ltv_tier, expiry_date)
        VALUES ('inst_nudge_e2e', 'sub_nudge_e2e', 'card', 'active', 48000000, 'high', $1)

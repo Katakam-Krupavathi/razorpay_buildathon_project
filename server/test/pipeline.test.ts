@@ -32,6 +32,10 @@ describe('End-to-End Recovery Pipeline Orchestrator Tests', () => {
     annualizedValue?: number;
     failureEventsCount?: number;
   }) {
+    RazorpayClient.setSimulatedLiveOverride(data.instrumentId, {
+      mandateStatus: data.mandateStatus || 'active',
+    });
+
     await pool.query(
       `INSERT INTO subscriptions (subscription_id, customer_id, plan_id, status)
        VALUES ($1, $2, 'plan_monthly', 'active');`,

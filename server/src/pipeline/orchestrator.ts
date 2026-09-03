@@ -126,6 +126,26 @@ export class RecoveryPipelineOrchestrator {
     const proposedPlan = planResult.proposal;
 
     // [Stage 3] Deterministic Policy Engine ("PERMIT")
+    // Query event store for proactive nudges/contacts within the current billing cycle (last 30 days)
+    let customerContactCountThisCycle = 0;
+    try {
+      const subEvents = await this.eventStore.getEventsForSubscription(
+        instrument.subscription_id,
+      );
+      const thirtyDaysAgo = new Date(refTime.getTime() - 30 * 86400 * 1000);
+      customerContactCountThisCycle = subEvents.filter((e) => {
+        const isNudge =
+          e.eventType === 'proactive_nudge_sent' ||
+          (e.eventType === 'action_executed' &&
+            ((e.payload as Record<string, unknown>)?.action === 'proactive_nudge' ||
+              (e.payload as Record<string, unknown>)?.finalAction === 'proactive_nudge'));
+        const eventTime = new Date(e.createdAt);
+        return isNudge && eventTime >= thirtyDaysAgo;
+      }).length;
+    } catch {
+      customerContactCountThisCycle = 0;
+    }
+
     const policyResult = await this.policyService.evaluateAndLog({
       instrumentId: instrument.instrument_id,
       subscriptionId: instrument.subscription_id,
@@ -136,7 +156,7 @@ export class RecoveryPipelineOrchestrator {
       rootCause: proposedPlan.rootCause,
       expectedRecoveryValue: proposedPlan.expectedRecoveryValue,
       ltvTier: instrument.ltv_tier,
-      customerContactCountThisCycle: 0,
+      customerContactCountThisCycle,
       amountPaise: Math.round(Number(instrument.annualized_value) / 12),
       evaluatedAt: refTime.toISOString(),
     });
