@@ -243,7 +243,7 @@ export class AttributionService {
       } else if (out.status === 'untouched' || out.recovery_type === 'none') {
         const monthly = Math.round(
           Number(
-            instruments.find((i) => i.instrument_id === out.instrument_id)?.annualized_value || 0,
+            instruments.find((i: { instrument_id?: string; annualized_value?: number | string }) => i.instrument_id === out.instrument_id)?.annualized_value || 0,
           ) / 12,
         );
         untouchedMRRPaise += monthly;

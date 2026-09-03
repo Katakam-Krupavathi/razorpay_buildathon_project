@@ -10,7 +10,7 @@
     "scripts"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @recovery/shared && npm run build -w @recovery/server && npm run build -w @recovery/web && npm run build -w @recovery/scripts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

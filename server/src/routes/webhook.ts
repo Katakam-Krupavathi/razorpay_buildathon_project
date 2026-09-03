@@ -46,11 +46,12 @@ export const webhookRoutes: FastifyPluginAsync<WebhookRouteOptions> = async (fas
 
       // 2. Ingest and project webhook with durable idempotency
       try {
+        const payload = request.body as RazorpayWebhookPayload;
         const webhookEventId = request.headers['x-razorpay-event-id'] as string | undefined;
-        const result = await processor.processWebhook(request.body, { webhookEventId });
+        const result = await processor.processWebhook(payload, { webhookEventId });
         request.log.info(
           {
-            event: request.body.event,
+            event: payload.event,
             subscriptionId: result.subscriptionId,
             status: result.status,
             sequenceNumber: result.event?.sequenceNumber,
