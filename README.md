@@ -2,6 +2,11 @@
 
 > **"AI predicts. Policy permits. Live verification confirms it's safe. Execution acts. Attribution proves what was actually recovered."**
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://buildathon-bice.vercel.app)
+[![CI Pipeline](https://img.shields.io/github/actions/workflow/status/Katakam-Krupavathi/razorpay_buildathon_project/ci.yml?branch=main&style=for-the-badge&logo=github)](https://github.com/Katakam-Krupavathi/razorpay_buildathon_project/actions)
+
+🌐 **Live Production Dashboard**: **[https://buildathon-bice.vercel.app](https://buildathon-bice.vercel.app)**
+
 The **Autonomous Revenue Recovery Control Plane** is a production-grade, event-sourced financial recovery system designed for Indian recurring subscription rails (**UPI AutoPay, Cards, and eNACH**). Built for the Razorpay AI Buildathon, it replaces naive, static retry loops with an intelligent, multi-layer control loop that computes real-time instrument health trajectories, estimates Expected Recovery Value (ERV), synthesizes clinical diagnostic reasoning via AI, strictly enforces deterministic rail policies and RBI compliance invariants, guards every money-moving action with a zero-trust verification gateway, and mathematically measures net recovered revenue through counterfactual attribution.
 
 ---
@@ -62,7 +67,7 @@ flowchart TD
 
 ## 🤖 The Crucial Role of AI in the Architecture
 
-In typical recovery systems, retries are driven by hardcoded time delays (e.g. "retry in 24 hours"). In the **Autonomous Revenue Recovery Control Plane**, AI is integrated as an intelligent diagnostic and planning layer (`server/src/planner/reasoning-engine.ts` and `server/src/ai/llm-client.ts`) that transforms raw error codes into clinical financial diagnoses:
+In typical recovery systems, retries are driven by hardcoded time delays (e.g. "retry in 24 hours"). In the **Autonomous Revenue Recovery Control Plane**, AI is integrated as an intelligent diagnostic and planning layer ([`server/src/planner/reasoning-engine.ts`](file:///server/src/planner/reasoning-engine.ts) and [`server/src/ai/llm-client.ts`](file:///server/src/ai/llm-client.ts)) that transforms raw error codes into clinical financial diagnoses:
 
 ### 1. Multi-Dimensional Feature Grounding
 The AI does not receive vague text; it receives a structured **11-Dimensional `RiskFeatureVector`** derived from the ledger:
@@ -105,10 +110,20 @@ Financial systems require absolute safety. This architecture enforces a **Zero E
 
 ---
 
+## 🌐 Live Deployment & Dashboard
+
+| Environment | URL | Details |
+| :--- | :--- | :--- |
+| **Production Dashboard (Vercel)** | **[https://buildathon-bice.vercel.app](https://buildathon-bice.vercel.app)** | Live hosted React 18 / Tailwind CSS control plane |
+| **Local Dashboard** | **`http://localhost:5173`** | Local Vite dev server |
+| **Local API Server** | **`http://localhost:4000`** | Fastify backend API & Webhook receiver |
+
+---
+
 ## ⚡ Quickstart
 
 ### Prerequisites
-- **Node.js**: `v20.x` or `v22.x`
+- **Node.js**: `v20.x` or `v22.x` (or `v24.x`)
 - **Docker**: For running PostgreSQL 16 and Redis 7
 
 ### 1. Start Infrastructure Services
