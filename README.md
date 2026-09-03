@@ -204,18 +204,23 @@ npm run build
 
 ---
 
-## ⚠️ Known Limitations
+## ⚠️ Known Limitations & Operational Specifications
 
 1. **Razorpay Live API Integration & Test Execution Simulation**:
    - When active Razorpay API keys (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) are provided, live REST API calls and webhooks are ingested.
-   - With default placeholder keys, money-moving execution actions (`chargeSubscription`, `pauseSubscription`) run through a clearly labeled local simulation path so evaluators can run the demo cold without credentials.
+   - With default placeholder keys, money-moving execution actions (`chargeSubscription`, `pauseSubscription`) run through a clearly labeled local simulation path so evaluators can run the demo cold without live credentials.
    - However, pre-action **Verification Gateway** checks strictly fail closed: any failure to positively verify live mandate/subscription state returns `BLOCK / INTERNAL_VERIFICATION_ERROR` (zero silent passes).
-2. **Redis-Backed Circuit Breakers & Distributed State**:
-   - Cohort circuit breaker states and execution idempotency tracking are backed by real Redis (`ioredis`) and PostgreSQL, with in-process fast memory caching for ultra-low latency.
-3. **AI Narrative Reasoning & Zero Execution Authority**:
-   - Clinical diagnostic reasoning strings are synthesized via `AiReasoningEngine`, grounded strictly in the 11-dimension `RiskFeatureVector` (with optional LLM integration when `GEMINI_API_KEY` / `OPENAI_API_KEY` is present and deterministic local synthesis fallback).
+2. **Redis-Backed Circuit Breakers & Distributed State Restoration**:
+   - Cohort circuit breaker states and execution idempotency tracking are backed by real Redis (`ioredis`) and PostgreSQL (`action_executions` table).
+   - `CohortCircuitBreaker` restores existing cohort trip status from Redis upon initialization and when cohorts are accessed, ensuring consistent outage protection across server restarts and multiple instances.
+3. **AI Structured Output, Providers & Zero Execution Authority**:
+   - Diagnostic narratives and structured assessments are synthesized via `AiReasoningEngine` and `callLlmNarrator` (supporting Google Gemini and OpenAI with schema validation on `diagnosis`, `root_cause`, `risk`, `recommendation`, `confidence`, `evidence_event_ids`).
+   - If the LLM call times out (2s budget), fails, or returns malformed data, the pipeline fails safely to deterministic mathematical fallback.
    - In accordance with the project's core safety thesis (*"AI predicts, Policy permits, Verification checks, Execution acts"*), the AI possesses structural Zero Execution Authority and cannot directly trigger charges, pause mandates, or bypass policy rules.
-4. **Authentication & Notification Delivery**:
+4. **Durable Webhook Idempotency & Transactionality**:
+   - Razorpay webhook deliveries are deduplicated via a dedicated `razorpay_event_id` unique column and `x-razorpay-event-id` header.
+   - Ingestion is transactional: event append, idempotency recording, and subscription state projection occur atomically, preventing duplicate side effects and out-of-order race conditions.
+5. **Authentication & Notification Delivery**:
    - User authentication (RBAC) and external SMS/WhatsApp delivery (Twilio/Gupshup) use structured abstractions suitable for prototype evaluation, ready to be wired to enterprise IdPs and SMS aggregators in production.
 
 ---
