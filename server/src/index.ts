@@ -1,4 +1,4 @@
-import Fastify, { FastifyServerOptions } from 'fastify';
+import Fastify, { FastifyServerOptions, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import type { ControlPlaneHealth } from '@recovery/shared';
@@ -48,6 +48,7 @@ export * from './audit/decision-trace-service.js';
 export * from './audit/compliance-service.js';
 export * from './routes/audit.js';
 export * from './routes/dashboard.js';
+export * from './redis/client.js';
 
 import { circuitBreakerRoutes, CircuitBreakerRouteOptions } from './routes/circuit-breaker.js';
 import { devHookRoutes } from './routes/dev-hooks.js';
@@ -60,8 +61,14 @@ import { EscalationService } from './escalation/escalation-service.js';
 import { AttributionService } from './attribution/attribution-service.js';
 import { DecisionTraceService } from './audit/decision-trace-service.js';
 import { ComplianceService } from './audit/compliance-service.js';
+import { getPool } from './db/connection.js';
+import { checkRedisHealth, getRedisClient } from './redis/client.js';
+import type { Redis } from 'ioredis';
+import type pg from 'pg';
 
 export interface AppOptions extends FastifyServerOptions {
+  pool?: pg.Pool;
+  redis?: Redis;
   webhookOptions?: WebhookRouteOptions;
   circuitBreakerOptions?: CircuitBreakerRouteOptions;
   escalationOptions?: EscalationRouteOptions;
@@ -78,15 +85,50 @@ export async function buildApp(opts?: AppOptions) {
     ...opts,
   });
 
-  await app.register(helmet, { contentSecurityPolicy: false });
-  await app.register(cors, { origin: true });
+  const pool = opts?.pool || getPool();
+  const redis = opts?.redis || getRedisClient();
+
+  // Helmet with sensible CSP
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'http://localhost:*', 'ws://localhost:*'],
+      },
+    },
+  });
+
+  // CORS configured with explicit allowed origins list (env var driven)
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4000', 'http://127.0.0.1:4000'];
+
+  await app.register(cors, {
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        cb(null, true);
+        return;
+      }
+      cb(new Error('Not allowed by CORS'), false);
+    },
+    credentials: true,
+  });
 
   // Initialize shared Circuit Breaker, Escalation Service, and Attribution Service
-  const circuitBreaker = opts?.circuitBreakerOptions?.circuitBreaker || new CohortCircuitBreaker();
-  const escalationService = opts?.escalationOptions?.escalationService || new EscalationService();
-  const attributionService = opts?.attributionOptions?.attributionService || new AttributionService();
-  const decisionTraceService = opts?.auditOptions?.decisionTraceService || new DecisionTraceService();
-  const complianceService = opts?.auditOptions?.complianceService || new ComplianceService();
+  const circuitBreaker =
+    opts?.circuitBreakerOptions?.circuitBreaker ||
+    new CohortCircuitBreaker(undefined, undefined, redis);
+  const escalationService =
+    opts?.escalationOptions?.escalationService || new EscalationService(pool);
+  const attributionService =
+    opts?.attributionOptions?.attributionService || new AttributionService(pool);
+  const decisionTraceService =
+    opts?.auditOptions?.decisionTraceService || new DecisionTraceService(pool);
+  const complianceService =
+    opts?.auditOptions?.complianceService || new ComplianceService(pool);
 
   // Register Webhook Ingestion Routes
   await app.register(webhookRoutes, opts?.webhookOptions || {});
@@ -94,8 +136,10 @@ export async function buildApp(opts?: AppOptions) {
   // Register Circuit Breaker Routes
   await app.register(circuitBreakerRoutes, { circuitBreaker });
 
-  // Register Dev Simulation Hooks Routes
-  await app.register(devHookRoutes);
+  // Register Dev Simulation Hooks Routes (only in non-production environments)
+  if (process.env.NODE_ENV !== 'production') {
+    await app.register(devHookRoutes);
+  }
 
   // Register Escalation Workflow Routes
   await app.register(escalationRoutes, { escalationService });
@@ -119,28 +163,53 @@ export async function buildApp(opts?: AppOptions) {
     };
   });
 
-  app.get('/health', async (): Promise<ControlPlaneHealth> => {
-    return {
-      status: 'healthy',
+  const runHealthCheck = async (reply: FastifyReply) => {
+    let dbStatus: 'connected' | 'disconnected' = 'disconnected';
+    let redisStatus: 'connected' | 'disconnected' = 'disconnected';
+
+    try {
+      await pool.query('SELECT 1');
+      dbStatus = 'connected';
+    } catch {
+      dbStatus = 'disconnected';
+    }
+
+    try {
+      const isRedisHealthy = await checkRedisHealth(redis);
+      redisStatus = isRedisHealthy ? 'connected' : 'disconnected';
+    } catch {
+      redisStatus = 'disconnected';
+    }
+
+    const isHealthy = dbStatus === 'connected' && redisStatus === 'connected';
+    const isDegraded = dbStatus === 'connected' && redisStatus === 'disconnected';
+    const status: 'healthy' | 'degraded' | 'unhealthy' = isHealthy
+      ? 'healthy'
+      : isDegraded
+        ? 'degraded'
+        : 'unhealthy';
+
+    const statusCode = isHealthy ? 200 : 503;
+
+    const healthData: ControlPlaneHealth = {
+      status,
       uptimeSeconds: Math.floor(process.uptime()),
-      database: 'connected',
-      redis: 'connected',
-      circuitBreaker: 'CLOSED',
+      database: dbStatus,
+      redis: redisStatus,
+      circuitBreaker: circuitBreaker.getStatus('rail:card')?.state || 'CLOSED',
       version: '0.1.0',
       timestamp: new Date().toISOString(),
     };
+
+    return reply.status(statusCode).send(healthData);
+  };
+
+  app.get('/health', async (_req, reply) => {
+    return runHealthCheck(reply);
   });
 
-  app.get('/api/health', async (): Promise<ControlPlaneHealth> => {
-    return {
-      status: 'healthy',
-      uptimeSeconds: Math.floor(process.uptime()),
-      database: 'connected',
-      redis: 'connected',
-      circuitBreaker: 'CLOSED',
-      version: '0.1.0',
-      timestamp: new Date().toISOString(),
-    };
+  app.get('/api/health', async (_req, reply) => {
+    return runHealthCheck(reply);
   });
 
   return app;
