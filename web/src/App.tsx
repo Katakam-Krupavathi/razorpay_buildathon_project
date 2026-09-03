@@ -143,15 +143,15 @@ export function App() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black tracking-tight text-white">
-                Revenue Command Center
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                Autonomous Revenue Recovery Control Plane
               </h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
                 v0.1.0-RC
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              Razorpay Mandate-Aware Autonomous Subscription Recovery & Safety Control Plane
+              Indian Subscription Rails (UPI AutoPay • Cards • eNACH) • Zero-Trust Safety • Counterfactual Attribution
             </p>
           </div>
         </div>
