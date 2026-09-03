@@ -1,227 +1,171 @@
 # Autonomous Revenue Recovery Control Plane
 
-[![CI](https://github.com/Katakam-Krupavathi/razorpay_buildathon_project/actions/workflows/ci.yml/badge.svg)](https://github.com/Katakam-Krupavathi/razorpay_buildathon_project/actions/workflows/ci.yml)
-[![Node Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+> **"AI predicts. Policy permits. Live verification confirms it's safe. Execution acts. Attribution proves what was actually recovered."**
 
-> **A Razorpay Mandate-Aware Subscription Recovery System engineered with an autonomous control loop: Predict, Permit, Guard, Verify, Execute, and Measure.**
+The **Autonomous Revenue Recovery Control Plane** is a production-grade, event-sourced financial recovery system designed for Indian recurring subscription rails (**UPI AutoPay, Cards, and eNACH**). Built for the Razorpay AI Buildathon, it replaces naive, static retry loops with an intelligent, multi-layer control loop that computes real-time instrument health trajectories, estimates Expected Recovery Value (ERV), synthesizes clinical diagnostic reasoning via AI, strictly enforces deterministic rail policies and RBI compliance invariants, guards every money-moving action with a zero-trust verification gateway, and mathematically measures net recovered revenue through counterfactual attribution.
 
 ---
 
-## 🌟 Project Vision
+## 🏛️ System Architecture
 
-Recurring revenue in modern SaaS and subscription businesses is vulnerable to silent failures: involuntary churn from expired cards, transient UPI bank downtimes, RBI mandate limit thresholds, and poorly timed retry storms. Traditional dunning systems rely on static, scheduled retry rules that degrade customer trust, trip payment gateways, and incur avoidable fee penalties.
+```mermaid
+flowchart TD
+    subgraph INGESTION["1. INGESTION & DATA LEDGER"]
+        WH["Razorpay Webhooks<br/><code>server/src/routes/webhook.ts</code>"]
+        SYN["Synthetic Generator<br/><code>scripts/src/synthetic/generator.ts</code>"]
+        ES[("Immutable EventStore<br/>SHA-256 Hash Chain<br/><code>server/src/event-store/event-store.ts</code>")]
+        WH -->|HMAC-SHA256 Verified| ES
+        SYN -->|Deterministic Seed| ES
+    end
 
-The **Autonomous Revenue Recovery Control Plane** replaces blind retries with an intelligent, closed-loop control system:
+    subgraph INTELLIGENCE["2. RISK & VALUE INTELLIGENCE"]
+        RS["Risk Intelligence Engine<br/>11-Dim Feature Vector<br/><code>server/src/risk/scorer.ts</code>"]
+        ERV["Expected Recovery Value Engine<br/>ERV = Amount * P(Rec) * Prior<br/><code>server/src/risk/erv-engine.ts</code>"]
+        ES --> RS
+        RS --> ERV
+    end
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              AUTONOMOUS REVENUE RECOVERY CONTROL PLANE                                  │
-├──────────────┬──────────────┬──────────────────┬──────────────────┬──────────────────┬─────────────────┤
-│ 1. PREDICT   │ 2. PERMIT    │ 3. GUARD         │ 4. VERIFY        │ 5. EXECUTE       │ 6. MEASURE      │
-├──────────────┼──────────────┼──────────────────┼──────────────────┼──────────────────┼─────────────────┤
-│ • Failure    │ • Autonomous │ • Rolling-Window │ • Mandate State  │ • Multi-Rail     │ • NVR Accounting│
-│   Taxonomy   │   Policy     │   Circuit        │   Validation     │   Fallback       │ • Cryptographic │
-│ • ERV &      │   Engine     │   Breakers       │ • RBI Pre-Debit  │   (UPI, Card,    │   SHA-256 Ledger│
-│   Churn Risk │ • NPCI / RBI │ • Auto-Trip &    │   Rule Check     │   Smart Dunning) │ • Explainable   │
-│   Scoring    │   Limits     │   Manual Reset   │ • 2 AM Stale-    │ • Human Queue    │   Decision Trace│
-│ • Advisory   │ • Bounded    │ • Error Spike    │   State Guard    │   Escalation     │ • Live Operator │
-│   Planner    │   Overrides  │   Shield         │                  │                  │   Dashboard     │
-└──────────────┴──────────────┴──────────────────┴──────────────────┴──────────────────┴─────────────────┘
-```
+    subgraph DECISION["3. PLANNING & DETERMINISTIC POLICY"]
+        AI["AI Diagnostic & Reasoning Engine<br/>Bounded Feature Vector Narration<br/><i>(Zero Execution Authority)</i><br/><code>server/src/planner/reasoning-engine.ts</code>"]
+        POL["Deterministic Policy Engine<br/>Rail Rules & RBI Compliance Caps<br/><code>server/src/policy/engine.ts</code>"]
+        CB["Cohort Circuit Breaker<br/>Redis-Backed Rolling Outage Guard<br/><code>server/src/circuit-breaker/circuit-breaker.ts</code>"]
+        ERV --> AI
+        AI --> POL
+        POL --> CB
+    end
 
----
+    subgraph SAFETY["4. ZERO-TRUST SAFETY & VERIFICATION"]
+        VG{"Safety Verification Gateway<br/>Pre-Flight Live State Check<br/><i>(Fails Closed)</i><br/><code>server/src/verification/gateway.ts</code>"}
+        CB -->|Permitted Action| VG
+    end
 
-## 🏗️ Build Status & Subsystem Architecture
+    subgraph EXECUTION["5. EXECUTION & ESCALATION"]
+        EXEC["Execution Engine<br/>Smart Retries / Token Updates / Pauses<br/><code>server/src/execution/execution-service.ts</code>"]
+        ESC["Operations Escalation Queue<br/>Human-in-the-Loop Review<br/><code>server/src/escalation/escalation-service.ts</code>"]
+        VG -->|VERIFIED_SAFE| EXEC
+        VG -->|BLOCKED / Stale State| ESC
+    end
 
-The codebase is fully integrated, typechecked, and tested across all core layers. Below is the real operational status of each subsystem:
-
-| Subsystem / Layer | Implementation Status | Implementation Details | Key Source Files | Test Coverage |
-| :--- | :--- | :--- | :--- | :--- |
-| **Monorepo & Infrastructure** | **Implemented** | Strict TypeScript, npm workspaces (`shared`, `server`, `web`, `scripts`), Docker Compose (Postgres 16 + Redis 7), GitHub Actions CI. | `package.json`<br>`docker-compose.yml`<br>`.github/workflows/ci.yml` | Full workspace build & lint pass |
-| **Event Store & Ledger** | **Implemented** | SHA-256 canonical hash chaining with genesis hash `000000...`, PostgreSQL immutability trigger (`prevent_event_mutation`). | `server/src/event-store/event-store.ts`<br>`server/src/event-store/hasher.ts`<br>`server/src/db/migrator.ts` | `server/test/event-store.test.ts` (10 tests) |
-| **Razorpay Ingestion & Client** | **Implemented** | HMAC-SHA256 signature verification, 9-event webhook state projection (`payment.failed`, `subscription.pending`, etc.), SDK client wrapper. | `server/src/razorpay/webhook-verifier.ts`<br>`server/src/razorpay/webhook-processor.ts`<br>`server/src/razorpay/client.ts` | `server/test/webhook.test.ts`<br>`server/test/razorpay-client.test.ts` |
-| **Synthetic Dataset Engine** | **Implemented** | Mulberry32 PRNG (seed=42), 100 subscriptions, 528 chained events, realistic Card/UPI/eNACH failure lifecycles, ₹1.04 Cr ARR. | `scripts/src/synthetic/generator.ts`<br>`scripts/src/synthetic/seeder.ts` | `scripts/test/synthetic-generator.test.ts` (10 tests) |
-| **Risk Intelligence & ERV** | **Implemented** | Weighted-sum scoring function ($S \in [0, 1]$), 7-cause failure taxonomy, Expected Recovery Value ($P(\text{recovery}) \times \text{LTV}$), Opportunity Queue. | `server/src/risk/scorer.ts`<br>`server/src/risk/erv-engine.ts`<br>`server/src/risk/health-service.ts` | `server/test/risk-scorer.test.ts`<br>`server/test/health-service.test.ts` |
-| **AI Recovery Planner** | **Implemented** | Pure advisory planner with **Zero Execution Authority** structurally enforced; generates `ProposedActionRecord` and `NO_ACTION` outcomes. | `server/src/planner/planner.ts`<br>`server/src/planner/planner-service.ts` | `server/test/planner.test.ts`<br>`server/test/planner-boundary.test.ts` |
-| **Deterministic Policy Engine** | **Implemented** | Literal versioned config (`policy-config.json`), NPCI UPI 1+3 retry cap, RBI AFA ₹15k step-up threshold, 1-nudge cap, grace period pauses. | `server/src/policy/engine.ts`<br>`server/src/policy/policy-service.ts`<br>`server/src/policy/policy-config.json` | `server/test/policy-engine.test.ts` (9 tests) |
-| **Cohort Circuit Breaker** | **Implemented** | Rolling window ($N=20$), 40% success rate threshold, single-trip invariant guarantee, fail-closed pipeline guard, human manual reset API. | `server/src/circuit-breaker/circuit-breaker.ts`<br>`server/src/circuit-breaker/circuit-breaker-guard.ts` | `server/test/circuit-breaker.test.ts` (9 tests) |
-| **Verification Gateway** | **Implemented** | Pre-action zero-trust check (Live state API vs local DB cache), idempotency validation, circuit breaker re-check, signature 2 AM stale-state demo. | `server/src/verification/gateway.ts`<br>`server/src/routes/dev-hooks.ts` | `server/test/verification-gateway.test.ts` (7 tests) |
-| **Execution Layer & Escalation** | **Implemented** | Multi-rail action dispatchers (`schedule_retry`, `proactive_nudge`, `pause`, `NO_ACTION`), human ops review queue (`escalation_queue`). | `server/src/execution/execution-service.ts`<br>`server/src/escalation/escalation-service.ts` | `server/test/execution-layer.test.ts`<br>`server/test/escalation.test.ts` |
-| **Outcome Attribution & Counterfactual** | **Implemented** | Realized financial tracking with 15% proactive and 30% reactive baseline discounts, Net Value Recovered (NVR), Top-line Scorecard rollup. | `server/src/attribution/attribution-service.ts`<br>`server/src/attribution/counterfactual-engine.ts` | `server/test/attribution.test.ts` (7 tests) |
-| **Decision Trace & Compliance Service** | **Implemented** | Chronological 8-stage decision trace assembly directly from event store, natural language explainability narrative, pre-canned regulatory queries. | `server/src/audit/decision-trace-service.ts`<br>`server/src/audit/compliance-service.ts` | `server/test/audit-compliance.test.ts` (10 tests) |
-| **Revenue Command Center UI** | **Implemented** | React 18 + Tailwind dashboard: Scorecard Banner, Opportunity Queue, Sparkline Instrument List, Decision Trace Modal, Presenter Bar. | `web/src/App.tsx`<br>`web/src/components/*` | `web/test/dashboard.test.tsx`<br>`web/test/app.test.ts` |
-| **End-to-End Control Loop** | **Implemented** | Autonomous pipeline orchestrator exercising full control loop from webhook ingestion through to dashboard outcome. | `server/src/pipeline/orchestrator.ts`<br>`scripts/src/run-demo-bootstrap.ts` | `server/test/e2e-pipeline.test.ts` (6 tests) |
-| **Notification Provider Gateway** | *Stubbed / Abstracted* | Structured channel abstraction logging simulated email/SMS/WhatsApp deliveries with idempotency keys. (Twilio/Gupshup ready). | `server/src/notifications/notification-service.ts` | Covered in execution layer tests |
-
----
-
-## 🛠️ Technology Stack & Engineering Justification
-
-| Layer                       | Technology                     | Engineering Rationale                                                                                                                                 |
-| :-------------------------- | :----------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Monorepo**                | npm Workspaces                 | Native, zero-overhead workspace management across shared types, server, web UI, and scripts without complex build tooling dependencies.               |
-| **Language**                | TypeScript (Strict Mode)       | End-to-end type safety, unified domain contracts shared across ingestion, policy evaluation, execution, and presentation tiers.                       |
-| **Backend Framework**       | Fastify (Node.js 20+ LTS)      | High-throughput, low-latency asynchronous processing essential for processing bursty Razorpay webhook streams and real-time policy evaluation.        |
-| **Event Store & Database**  | PostgreSQL 16                  | Relational consistency, JSONB support for immutable event sourcing and complex state audit trails, ACID transactions for financial ledger operations. |
-| **Cache & Circuit Breaker** | Redis 7                        | Sub-millisecond atomic counters, sliding window rate limiters, distributed state locks, and instant circuit-breaker trip states.                      |
-| **Frontend Dashboard**      | React 18 + Vite + Tailwind CSS | Ultra-fast client build and instant feedback dashboard with real-time metrics, live event stream visualization, and policy overrides.                 |
-| **Containerization**        | Docker Compose                 | Reproducible local development infrastructure for PostgreSQL and Redis with healthchecks and persistent volumes.                                      |
-| **CI / CD Pipeline**        | GitHub Actions                 | Automated dependency caching, multi-package linting, typechecking, and unit test validation on every push and pull request.                           |
-
----
-
-## 🚀 One-Command Quickstart & Demo
-
-For evaluators and judges to launch the complete system cold with zero manual setup:
-
-```bash
-# 1. Start local PostgreSQL & Redis containers
-docker compose up -d
-
-# 2. Run one-command demo bootstrap (resets DB, seeds synthetic batch, runs recovery pipeline, starts API & UI)
-make demo
-# OR: npm run demo
+    subgraph ATTRIBUTION["6. ATTRIBUTION & OBSERVABILITY"]
+        ATTR["Counterfactual Attribution Engine<br/>Net Value Recovered (NVR)<br/><code>server/src/attribution/attribution-service.ts</code>"]
+        TRACE["Unified Decision Trace<br/>Cryptographic Audit Trail<br/><code>server/src/audit/decision-trace-service.ts</code>"]
+        DASH["Operations Dashboard<br/>React + Tailwind + Vite<br/><code>web/src/App.tsx</code>"]
+        EXEC --> ATTR
+        EXEC --> TRACE
+        ESC --> TRACE
+        ATTR --> DASH
+        TRACE --> DASH
+    end
 ```
 
-- **Web Command Center Dashboard**: [http://localhost:5173](http://localhost:5173)
-- **Fastify Control Plane API**: [http://localhost:4000](http://localhost:4000) (Health: [http://localhost:4000/health](http://localhost:4000/health))
-- **Live Demo Script & Pitch Walkthrough**: See [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)
-- **Evaluation Criteria Traceability Matrix**: See [`docs/EVALUATION_MAPPING.md`](docs/EVALUATION_MAPPING.md)
-- **Detailed Subsystem Documentation**:
-  - [Architecture Specification](docs/ARCHITECTURE.md)
-  - [Deterministic Policy Engine Ruleset](docs/POLICY.md)
-  - [Safety & Verification Gateway ("2 AM" Guard)](docs/VERIFICATION_GATEWAY.md)
-  - [Cohort Circuit Breakers & Outage Protection](docs/CIRCUIT_BREAKER.md)
-  - [AI Recovery Planner (Zero Execution Authority)](docs/RECOVERY_PLANNER.md)
-  - [Expected Recovery Value (ERV) Formulation](docs/ERV_CONFIG.md)
-  - [Risk Intelligence Scoring Function](docs/RISK_SCORING.md)
-  - [Counterfactual Financial Attribution Method](docs/COUNTERFACTUAL_METHOD.md)
-  - [Razorpay Webhook & Integration Reference](docs/RAZORPAY_INTEGRATION.md)
-  - [Execution Layer & Orchestration](docs/EXECUTION_LAYER.md)
-  - [Synthetic Dataset Summary Report](docs/SAMPLE_BATCH_SUMMARY.md)
+---
+
+## ⚖️ Implementation Status: Real vs. Simulated
+
+| Component | Status | Architectural Detail |
+| :--- | :--- | :--- |
+| **Webhook Ingestion** | **100% Real** | Real HTTP receiver on `/api/webhooks/razorpay`, HMAC-SHA256 verified, raw-body preserved, and deduplicated via `razorpay_event_id`. |
+| **EventStore Ledger** | **100% Real** | PostgreSQL 16 append-only ledger with SHA-256 hash chaining, advisory locks, and cryptographic integrity verification. |
+| **Database & Cache** | **100% Real** | Real local PostgreSQL 16 (`:5432`) and Redis 7 (`:6379`) backing relational projections, idempotency tracking, and cohort states. |
+| **Risk Scoring & ERV** | **100% Real** | Mathematical 11-dimension `RiskFeatureVector` calculation, health trajectory classification (`HEALTHY`, `DEGRADING`, `TERMINAL`), and ERV prioritization. |
+| **AI Diagnostic Engine** | **100% Real** | Structured schema-validated clinical diagnosis (Gemini 1.5 Flash / OpenAI GPT-4o-mini with deterministic fallback) strictly grounded in feature vectors with **Zero Execution Authority**. |
+| **Policy Engine** | **100% Real** | Deterministic rule matrix enforcing RBI ₹15,000 AFA caps, cooldown windows, max billing-cycle contact frequency, and grace period pauses. |
+| **Circuit Breakers** | **100% Real** | Rolling-window cohort breaker backed by Redis (`ioredis`) with state restoration across restarts and a 10-sample statistical guard. |
+| **Verification Gateway** | **100% Real** | 4-point pre-action verification check with fail-closed live state validation and PostgreSQL `action_executions` idempotency. |
+| **Razorpay API Actions** | **Real / Simulated** | Executes live API requests (`chargeSubscription`, `pauseSubscription`) when active credentials are provided; falls back cleanly to local execution simulation with test keys. |
+| **Financial Attribution** | **100% Real** | Counterfactual uplift engine computing Gross Recovered MRR, Net Value Recovered (NVR), and baseline loss estimates. |
+| **Operations Dashboard** | **100% Real** | Full React 18 + Vite dashboard with live Top Recovery Opportunities queue, health sparklines, decision trace inspector, and circuit breaker metrics. |
 
 ---
 
-## 🛠️ Step-by-Step Manual Setup
+## ⚡ Quickstart
 
 ### Prerequisites
-- **Node.js**: `v20.0.0` or higher (Node 22 LTS recommended)
-- **npm**: `v10.0.0` or higher
-- **Docker & Docker Compose**: Installed and running
+- **Node.js**: `v20.x` or `v22.x`
+- **Docker**: For running PostgreSQL 16 and Redis 7
 
-### 1. Install Dependencies & Configure Environment
-```bash
-git clone https://github.com/Katakam-Krupavathi/razorpay_buildathon_project.git
-cd razorpay_buildathon_project
-npm install
-cp .env.example .env
-```
-
-### 2. Database Migrations & Synthetic Data Seeding
+### 1. Start Infrastructure Containers
 ```bash
 docker compose up -d
+```
+*Starts PostgreSQL on `localhost:5432` and Redis on `localhost:6379`.*
 
-# Reset database & apply schema
-npm run db:reset
-
-# Seed deterministic 100-subscription synthetic dataset (seed=42)
-npm run seed:synthetic
-
-# Execute autonomous recovery pipeline batch across dataset
-npm run pipeline:batch
-
-# Run regulatory compliance audit query engine
-npm run audit:compliance
+### 2. Install Dependencies
+```bash
+npm install
 ```
 
-### 3. Start Development Servers
+### 3. Initialize Database Schema & Migrations
+```bash
+npm run db:reset
+```
+*Applies all 5 SQL migrations, creating relational tables, ledger schema, and unique indexes.*
+
+### 4. Seed Synthetic Subscription Lifecycle Data
+```bash
+npm run seed:synthetic
+```
+*Generates 100 realistic subscriptions (Card, UPI AutoPay, eNACH) with 600+ event-sourced ledger events with 100% hash integrity.*
+
+### 5. Execute Autonomous Pipeline Batch Run
+```bash
+npm run pipeline:batch
+```
+*Executes the complete control loop (Risk Scorer → ERV → Planner → Policy → Verification → Execution/Attribution) and populates the financial scorecard.*
+
+### 6. Start the Control Plane Server & Dashboard
 ```bash
 npm run dev
 ```
+- **Dashboard UI**: [http://localhost:5173](http://localhost:5173)
+- **API Server**: [http://localhost:4000](http://localhost:4000)
 
 ---
 
-## 🧪 Comprehensive Automated Testing & Quality Pass
+## 🔍 How to Verify Live Webhook Ingestion (End-to-End Checklist)
 
-```bash
-# Run unit, component, and end-to-end integration tests across all 4 workspaces (145 tests)
-npm test
+1. Start the application servers:
+   ```bash
+   npm run dev
+   ```
+2. In a second terminal, start the Smee webhook proxy:
+   ```bash
+   npx smee-client --url https://smee.io/wl5DMMFla94Wbz43 --target http://localhost:4000/api/webhooks/razorpay
+   ```
+3. Trigger a state change in Razorpay Dashboard Test Mode (e.g. Cancel or Halt subscription `sub_TXW1raR9Uus3ch`) or dispatch an authentic HMAC-SHA256 signed event payload.
+4. Verify the logs in both terminals:
+   - **Smee terminal**: `POST http://localhost:4000/api/webhooks/razorpay - 200`
+   - **Dev server terminal**: `{"event":"subscription.halted","status":"halted","sequenceNumber":2988,"msg":"Razorpay webhook successfully ingested and projected to event store"}`
+5. Verify in PostgreSQL that the event was appended to the immutable chain and projected into `subscriptions`:
+   ```sql
+   SELECT sequence_number, event_type, subscription_id, hash FROM events ORDER BY sequence_number DESC LIMIT 1;
+   SELECT subscription_id, status FROM subscriptions WHERE subscription_id = 'sub_TXW1raR9Uus3ch';
+   ```
 
-# Run strict ESLint checks across entire repository (zero errors, zero warnings)
-npm run lint
+---
 
-# Compile all TypeScript workspaces and build production Vite web bundle
-npm run build
+## 📂 Project Structure
+
+```text
+├── server/          # Fastify API server, policy engine, verification gateway, AI narrator & EventStore
+├── web/             # React 18 / Vite / Tailwind CSS operations dashboard & decision trace viewer
+├── shared/          # Shared TypeScript domain models, schemas, and event contracts
+├── scripts/         # Synthetic data generator, seeders, batch runners, and demo bootstrap utilities
+└── docs/            # Architecture specifications, pitch deck, and compliance runbooks
 ```
 
 ---
 
-## 📁 Monorepo Layout
+## ⚠️ Known Limitations
 
-```
-.
-├── .github/
-│   └── workflows/
-│       └── ci.yml               # GitHub Actions CI workflow
-├── docs/                        # Subsystem design docs, pitch script, and evaluation mapping
-├── server/                      # Fastify API server, Webhook ingestion, Pipeline & Control Plane
-│   ├── src/
-│   │   ├── attribution/         # Outcome attribution & counterfactual engine
-│   │   ├── audit/               # Decision trace assembly & compliance query service
-│   │   ├── circuit-breaker/     # Rolling window cohort circuit breaker & pipeline guard
-│   │   ├── db/                  # PostgreSQL connection pool & migration runner
-│   │   ├── escalation/          # Human-in-the-loop escalation queue service
-│   │   ├── event-store/         # Append-only SHA-256 hash-chained event store
-│   │   ├── execution/           # Multi-rail action dispatchers & handlers
-│   │   ├── notifications/       # Notification delivery abstraction
-│   │   ├── pipeline/            # End-to-end autonomous recovery orchestrator
-│   │   ├── planner/             # AI Recovery Planner (zero execution authority)
-│   │   ├── policy/              # Deterministic Policy Engine ("PERMIT")
-│   │   ├── razorpay/            # Webhook signature verifier & Razorpay client SDK
-│   │   ├── risk/                # Risk Intelligence scoring & ERV engine
-│   │   ├── routes/              # Fastify REST endpoints & dev simulation hooks
-│   │   └── verification/        # Safety & Verification Gateway ("2 AM" guard)
-│   └── test/                    # 126 unit, component, boundary, and e2e test suites
-├── web/                         # React 18 + Vite + Tailwind CSS Dashboard UI
-│   ├── src/
-│   │   └── components/          # Scorecard, Opportunity Queue, Sparklines, Trace Modal
-│   └── test/                    # React component tests
-├── shared/                      # Shared domain types, contracts & recovery schemas
-│   ├── src/
-│   └── test/
-├── scripts/                     # Operational scripts, migration runners & synthetic generator
-│   ├── src/
-│   │   └── synthetic/           # Deterministic PRNG lifecycle generator & seeder
-│   └── test/
-├── docker-compose.yml           # Local PostgreSQL 16 & Redis 7 stack
-├── Makefile                     # Root one-command demo, test, build, lint targets
-├── .env.example                 # Environment variables specification
-├── package.json                 # Monorepo root orchestration
-├── tsconfig.base.json           # Base TypeScript compiler settings
-└── tsconfig.json                # Project references configuration
-```
-
----
-
-## ⚠️ Known Limitations & Operational Specifications
-
-1. **Razorpay Live API Integration & Test Execution Simulation**:
-   - When active Razorpay API keys (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) are provided, live REST API calls and webhooks are ingested.
-   - With default placeholder keys, money-moving execution actions (`chargeSubscription`, `pauseSubscription`) run through a clearly labeled local simulation path so evaluators can run the demo cold without live credentials.
-   - However, pre-action **Verification Gateway** checks strictly fail closed: any failure to positively verify live mandate/subscription state returns `BLOCK / INTERNAL_VERIFICATION_ERROR` (zero silent passes).
-2. **Redis-Backed Circuit Breakers & Distributed State Restoration**:
-   - Cohort circuit breaker states and execution idempotency tracking are backed by real Redis (`ioredis`) and PostgreSQL (`action_executions` table).
-   - `CohortCircuitBreaker` restores existing cohort trip status from Redis upon initialization and when cohorts are accessed, ensuring consistent outage protection across server restarts and multiple instances.
-3. **AI Structured Output, Providers & Zero Execution Authority**:
-   - Diagnostic narratives and structured assessments are synthesized via `AiReasoningEngine` and `callLlmNarrator` (supporting Google Gemini and OpenAI with schema validation on `diagnosis`, `root_cause`, `risk`, `recommendation`, `confidence`, `evidence_event_ids`).
-   - If the LLM call times out (2s budget), fails, or returns malformed data, the pipeline fails safely to deterministic mathematical fallback.
-   - In accordance with the project's core safety thesis (*"AI predicts, Policy permits, Verification checks, Execution acts"*), the AI possesses structural Zero Execution Authority and cannot directly trigger charges, pause mandates, or bypass policy rules.
-4. **Durable Webhook Idempotency & Transactionality**:
-   - Razorpay webhook deliveries are deduplicated via a dedicated `razorpay_event_id` unique column and `x-razorpay-event-id` header.
-   - Ingestion is transactional: event append, idempotency recording, and subscription state projection occur atomically, preventing duplicate side effects and out-of-order race conditions.
-5. **Authentication & Notification Delivery**:
-   - User authentication (RBAC) and external SMS/WhatsApp delivery (Twilio/Gupshup) use structured abstractions suitable for prototype evaluation, ready to be wired to enterprise IdPs and SMS aggregators in production.
+1. **Live Razorpay Execution vs. Simulation**:
+   - Live REST API calls and webhooks are ingested when active keys (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) are present in `.env`.
+   - With placeholder keys, money-moving actions (`chargeSubscription`, `pauseSubscription`) execute through a local simulation branch so reviewers can evaluate the system cold without bank credentials.
+   - Pre-action **Verification Gateway** checks strictly fail closed: any failure to verify live state returns `BLOCK / INTERNAL_VERIFICATION_ERROR`.
+2. **AI Reasoning Boundary**:
+   - The AI diagnostic engine produces narrative justifications grounded in the `RiskFeatureVector`. It has **Zero Execution Authority** and cannot bypass policy rules, override circuit breakers, or initiate unpermitted charges.
+3. **External SMS/WhatsApp Delivery**:
+   - Customer notifications use structured abstractions ready for production integration with enterprise IdPs and SMS gateways (Twilio, Gupshup).
 
 ---
 

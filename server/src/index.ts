@@ -88,6 +88,17 @@ export async function buildApp(opts?: AppOptions) {
   const pool = opts?.pool || getPool();
   const redis = opts?.redis || getRedisClient();
 
+  // Preserve raw body for authentic HMAC-SHA256 signature verification
+  app.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+    try {
+      (req as unknown as { rawBody: string }).rawBody = body.toString('utf8');
+      const json = JSON.parse(body.toString('utf8'));
+      done(null, json);
+    } catch (err: unknown) {
+      done(err as Error, undefined);
+    }
+  });
+
   // Helmet with sensible CSP
   await app.register(helmet, {
     contentSecurityPolicy: {

@@ -21,11 +21,14 @@ export const webhookRoutes: FastifyPluginAsync<WebhookRouteOptions> = async (fas
       const signature = request.headers['x-razorpay-signature'] as string | undefined;
 
       // Extract raw body or serialize body to string if rawBody not attached
-      const rawBody =
-        (request as unknown as { rawBody?: string }).rawBody || JSON.stringify(request.body);
+      const rawBody = (request as unknown as { rawBody?: string }).rawBody || '';
+      const serializedBody = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
 
-      // 1. Verify HMAC-SHA256 signature
-      const isValid = verifyWebhookSignature(rawBody, signature, webhookSecret);
+      // 1. Verify HMAC-SHA256 signature against raw buffer or serialized payload
+      let isValid = verifyWebhookSignature(rawBody, signature, webhookSecret);
+      if (!isValid && serializedBody && serializedBody !== rawBody) {
+        isValid = verifyWebhookSignature(serializedBody, signature, webhookSecret);
+      }
 
       if (!isValid) {
         request.log.warn(
