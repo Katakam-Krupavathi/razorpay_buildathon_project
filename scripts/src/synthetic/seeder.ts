@@ -136,7 +136,7 @@ export class SyntheticDataSeeder {
     }
 
     // 3. Degrading / Terminal / AFA Over Threshold Lifecycle Events
-    if (spec.isOverAfaThreshold && spec.healthProfile !== 'TERMINAL') {
+    if (spec.isOverAfaThreshold) {
       const failureTime = Date.now() - 3600 * 1000; // 1 hour ago
       const pendingPayload: RazorpayWebhookPayload = {
         entity: 'event',
